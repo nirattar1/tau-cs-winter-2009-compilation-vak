@@ -59,13 +59,12 @@ public class TypeTable {
      * @throws SemanticError
      */
     public static void addClassType(ICClass c) throws SemanticError{
-    	if (uniqueClassTypes.containsKey(c.getName())){
-    		System.out.println("*** in first if");
+    	if (uniqueClassTypes.containsKey(c.getName())){ 
     		throw new SemanticError("class already defined",c.getLine(),c.getName());
     	}
     	if (c.hasSuperClass()) {
     		if (!uniqueClassTypes.containsKey(c.getSuperClassName()))
-    			throw new SemanticError("super-class is undefined",c.getLine(),c.getName());
+    			throw new SemanticError("super-class is undefined",c.getLine(),c.getSuperClassName());
     	}
     	
     	ClassType ct = new ClassType(c);
