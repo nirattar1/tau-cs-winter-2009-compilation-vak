@@ -123,8 +123,10 @@ public class Compiler {
 		// build symbol tables and type table
 		SymbolTableBuilder symbolTableBuilder = new SymbolTableBuilder(args[0]);
 		
+		Object globalSymTab = root.accept(symbolTableBuilder);
+		
 		if (dumpsymtab){
-			System.out.println("\n"+root.accept(symbolTableBuilder));
+			System.out.println("\n"+globalSymTab);
 			System.out.println(TypeTable.staticToString());
 		}
 	}
