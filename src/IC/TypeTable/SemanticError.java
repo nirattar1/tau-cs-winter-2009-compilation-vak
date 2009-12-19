@@ -6,6 +6,8 @@ package IC.TypeTable;
  * that caused the error
  */
 public class SemanticError extends Exception {
+	private static final long serialVersionUID = -4099339233866617388L;
+	
 	private int line;
 	private String value;
 	
