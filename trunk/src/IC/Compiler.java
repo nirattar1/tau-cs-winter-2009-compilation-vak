@@ -124,7 +124,7 @@ public class Compiler {
 		SymbolTableBuilder symbolTableBuilder = new SymbolTableBuilder(args[0]);
 		
 		if (dumpsymtab){
-			System.out.println(root.accept(symbolTableBuilder));
+			System.out.println("\n"+root.accept(symbolTableBuilder));
 			System.out.println(TypeTable.staticToString());
 		}
 	}
