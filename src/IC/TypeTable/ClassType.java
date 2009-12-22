@@ -15,11 +15,15 @@ public class ClassType extends Type {
 		this.classAST = classAST;
 	}
 	
-	public boolean subtypeOf(Type t) throws SemanticError{
+	public boolean subtypeOf(Type t){
 		if (!(t instanceof ClassType)) return false;	// t is not a class type		
 		if (t.getName() == this.getName()) return true;	// t is me
 		if (this.super_name == null) return false;		// I don't have a super
-		else return TypeTable.getClassType(super_name).subtypeOf(t);	// try my super class
+		else try{
+			return TypeTable.getClassType(super_name).subtypeOf(t);	// try my super class
+		} catch (SemanticError se){ // will never get here
+			return false;
+		}
 	}
 	
 	/**

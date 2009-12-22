@@ -23,7 +23,7 @@ public abstract class Type {
 	 * for classes: returns true iff my type of type t or a subtype of t
 	 * for all other types: returns true iff my type is t
 	 */
-	public abstract boolean subtypeOf(Type t) throws SemanticError;
+	public abstract boolean subtypeOf(Type t);
 	
 	/**
 	 * getter for the type's unique id

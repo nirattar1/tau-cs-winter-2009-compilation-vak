@@ -1,6 +1,7 @@
 package IC.Visitors;
 
 import IC.AST.*;
+import IC.TypeTable.SemanticError;
 
 /**
  * Visitor for resolving the following issues:
@@ -117,9 +118,15 @@ public class DefTypeCheckingVisitor implements Visitor {
 		if (assignmentType == null) return null;
 		
 		// type check
+		// check that the assignment is of the same type as the location type
+		if (!assignmentType.subtypeOf(locationType)){
+			System.err.println(new SemanticError("type mismatch, not of type "+locationType.getName(),
+					assignment.getLine(),
+					assignmentType.getName()));
+			return null;
+		}
 		
-		
-		return null;
+		return true;
 	}
 
 	@Override
