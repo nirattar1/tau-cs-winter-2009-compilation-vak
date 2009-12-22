@@ -1,64 +1,49 @@
 package IC.Visitors;
 
-import IC.AST.ArrayLocation;
-import IC.AST.Assignment;
-import IC.AST.Break;
-import IC.AST.CallStatement;
-import IC.AST.Continue;
-import IC.AST.ExpressionBlock;
-import IC.AST.Field;
-import IC.AST.Formal;
-import IC.AST.ICClass;
-import IC.AST.If;
-import IC.AST.Length;
-import IC.AST.LibraryMethod;
-import IC.AST.Literal;
-import IC.AST.LocalVariable;
-import IC.AST.LogicalBinaryOp;
-import IC.AST.LogicalUnaryOp;
-import IC.AST.MathBinaryOp;
-import IC.AST.MathUnaryOp;
-import IC.AST.NewArray;
-import IC.AST.NewClass;
-import IC.AST.PrimitiveType;
-import IC.AST.Program;
-import IC.AST.Return;
-import IC.AST.StatementsBlock;
-import IC.AST.StaticCall;
-import IC.AST.StaticMethod;
-import IC.AST.This;
-import IC.AST.UserType;
-import IC.AST.VariableLocation;
-import IC.AST.VirtualCall;
-import IC.AST.VirtualMethod;
-import IC.AST.Visitor;
-import IC.AST.While;
+import IC.AST.*;
 
 /**
  * Visitor for resolving the following issues:
  * - check illegal use of undefined symbols
+ * - Type checks
  */
 public class DefTypeCheckingVisitor implements Visitor {
 
 	@Override
+	/**
+	 * Program Visitor:
+	 * - recursive calls to all classes
+	 * returns null if encountered an error, true otherwise
+	 */
 	public Object visit(Program program) {
 		// recursive call to class 
 		for(ICClass c: program.getClasses()){
-			
+			if (c.accept(this) == null) return null;
 		}
-		return null;
+		return true;
 	}
 
 	@Override
+	/**
+	 * ICClass Visitor:
+	 * - recursive calls to all methods
+	 * returns null if encountered an error, true otherwise
+	 */
 	public Object visit(ICClass icClass) {
-		// TODO Auto-generated method stub
-		return null;
+		// by now all fields are defined legally
+		// check only methods
+		for(Method m: icClass.getMethods()){
+			if (m.accept(this) == null) return null;
+		}
+		return true;
 	}
 
 	@Override
+	/**
+	 * Field visitor: never called
+	 */
 	public Object visit(Field field) {
-		// TODO Auto-generated method stub
-		return null;
+		return true;
 	}
 
 	@Override
