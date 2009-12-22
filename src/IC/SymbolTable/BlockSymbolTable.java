@@ -26,16 +26,18 @@ public class BlockSymbolTable extends SymbolTable {
 		else return vs;
 	}
 	
+	/**
+	 * a local variable recursive symbol getter
+	 * returns the variable from the first scope it encounters it in, or throws
+	 * semantic error if not found
+	 * @param name
+	 * @return
+	 * @throws SemanticError
+	 */
 	public VarSymbol getVarSymbolRec(String name) throws SemanticError{
-		FieldSymbol fs = fieldEntries.get(name);
-		if (fs == null) {
-			if (hasSuper){
-				fs = ((ClassSymbolTable) parent).getFieldSymbolRec(name);
-			} else {
-				throw new SemanticError("field does not exist",name);
-			}
-		}
-		return fs;
+		VarSymbol vs = varEntries.get(name);
+		if (vs == null) vs = ((BlockSymbolTable) parent).getVarSymbolRec(name);
+		return vs;
 	}
 	
 	/**

@@ -115,7 +115,7 @@ public class ClassSymbolTable extends SymbolTable {
 			if (hasSuper){
 				fs = ((ClassSymbolTable) parent).getFieldSymbolRec(name);
 			} else {
-				throw new SemanticError("field does not exist",name);
+				throw new SemanticError("name cannot be resolved",name);
 			}
 		}
 		return fs;
