@@ -45,46 +45,80 @@ public class DefTypeCheckingVisitor implements Visitor {
 	public Object visit(Field field) {
 		return true;
 	}
+	
+	/**
+	 * Method Visitor:
+	 * - recursive calls to all statements (used by static, virtual and library method)
+	 * returns null if encountered an error, true otherwise
+	 */
+	public Object methodVisitHelper(Method method){
+		// recursive call to all statements in method
+		for(Statement s: method.getStatements()){
+			if (s.accept(this) == null) return null;
+		}
+		return true;
+	}
 
 	@Override
+	/**
+	 * VirtualMethod visitor: see methodVisitHelper documentation
+	 */
 	public Object visit(VirtualMethod method) {
-		// TODO Auto-generated method stub
-		return null;
+		return methodVisitHelper(method);
 	}
 
 	@Override
+	/**
+	 * StaticMethod visitor: see methodVisitHelper documentation
+	 */
 	public Object visit(StaticMethod method) {
-		// TODO Auto-generated method stub
-		return null;
+		return methodVisitHelper(method);
 	}
 
 	@Override
+	/**
+	 * LibraryMethod visitor: see methodVisitHelper documentation
+	 */
 	public Object visit(LibraryMethod method) {
-		// TODO Auto-generated method stub
-		return null;
+		return methodVisitHelper(method);
 	}
 
 	@Override
+	/**
+	 * Formal visitor: never called
+	 */
 	public Object visit(Formal formal) {
-		// TODO Auto-generated method stub
-		return null;
+		return true;
 	}
 
 	@Override
+	/**
+	 * PrimitiveType visitor: never called
+	 */
 	public Object visit(PrimitiveType type) {
-		// TODO Auto-generated method stub
-		return null;
+		return true;
 	}
 
 	@Override
+	 /**
+	  * UserType visitor: never called
+	  */
 	public Object visit(UserType type) {
-		// TODO Auto-generated method stub
-		return null;
+		return true;
 	}
 
 	@Override
 	public Object visit(Assignment assignment) {
-		// TODO Auto-generated method stub
+		// check location recursively
+		IC.TypeTable.Type locationType = (IC.TypeTable.Type) assignment.getVariable().accept(this);
+		if (locationType == null) return null;
+		// check assignment recursively
+		IC.TypeTable.Type assignmentType = (IC.TypeTable.Type) assignment.getAssignment().accept(this);
+		if (assignmentType == null) return null;
+		
+		// type check
+		
+		
 		return null;
 	}
 

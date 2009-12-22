@@ -1,6 +1,7 @@
 package IC.SymbolTable;
 
 import IC.TypeTable.*;
+
 import java.util.*;
 
 /**
@@ -10,10 +11,14 @@ import java.util.*;
 public class MethodSymbolTable extends BlockSymbolTable {
 	private ReturnVarSymbol returnVarSymbol;
 	private String name;
+	private boolean isStatic;
 	
 	public MethodSymbolTable(String name, ClassSymbolTable parent){
 		super(parent);
 		this.name = name;
+		try{
+			this.isStatic = parent.getMethodSymbol(name).isStatic();
+		} catch(SemanticError se){} // will never be thrown
 	}
 	
 	/**
@@ -23,7 +28,6 @@ public class MethodSymbolTable extends BlockSymbolTable {
 	public String getName(){
 		return this.name;
 	}
-	
 	
 	/**
 	 * a local variable / parameter symbol getter
@@ -62,6 +66,27 @@ public class MethodSymbolTable extends BlockSymbolTable {
 	 */
 	public void setReturnVarSymbol(String typeName) throws SemanticError{
 		this.returnVarSymbol = new ReturnVarSymbol("_ret",typeName);
+	}
+	
+	/**
+	 * a local variable recursive symbol getter
+	 * returns the variable from the first scope it encounters it in, or throws
+	 * semantic error if not found
+	 * only in a case of a virtual method, will continue recursive field search in its parent (class)
+	 * @param name
+	 * @return
+	 * @throws SemanticError
+	 */
+	public VarSymbol getVarSymbolRec(String name) throws SemanticError{
+		VarSymbol vs = varEntries.get(name); // parameters and local variables of method
+		if (vs == null){
+			if (this.isStatic){ // the method whose this symbol table belongs to is a static method
+				throw new SemanticError("name cannot be resolved",name);
+			} else { // it is a virtual method, continue recursive search
+				vs = ((ClassSymbolTable) parent).getFieldSymbolRec(name);
+			}
+		}
+		return vs;
 	}
 
 	/**
