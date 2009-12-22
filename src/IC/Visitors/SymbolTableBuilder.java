@@ -5,6 +5,12 @@ import IC.AST.*;
 import IC.SymbolTable.*;
 import IC.TypeTable.*;
 
+/**
+ * Visitor for building all Symbol tables (Gloabl, class, method and block), and check:
+ * - illegal symbol redefinitions 
+ * - illegal shadowing
+ * - illegal methods overriding
+ */
 public class SymbolTableBuilder implements IC.AST.Visitor{
 	private String icFileName;
 	

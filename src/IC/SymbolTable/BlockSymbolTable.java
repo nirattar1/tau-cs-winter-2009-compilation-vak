@@ -26,6 +26,18 @@ public class BlockSymbolTable extends SymbolTable {
 		else return vs;
 	}
 	
+	public VarSymbol getVarSymbolRec(String name) throws SemanticError{
+		FieldSymbol fs = fieldEntries.get(name);
+		if (fs == null) {
+			if (hasSuper){
+				fs = ((ClassSymbolTable) parent).getFieldSymbolRec(name);
+			} else {
+				throw new SemanticError("field does not exist",name);
+			}
+		}
+		return fs;
+	}
+	
 	/**
 	 * a local variable symbol adder
 	 * @param name
