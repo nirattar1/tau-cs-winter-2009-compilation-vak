@@ -1,9 +1,9 @@
 class A {
   string str;
   int i;
-
+  
   static int sfunc(boolean b) {
-    if (b) {
+	if (b) {
       {
         int k = 5;
       }
@@ -35,9 +35,12 @@ class B extends A {
 
     void vfunc(A a, int max, int val) {
     }
+	
+	static void sfunc() {
+	}
 }
 
-class C extend C{
+class C {
   static void main(string[] args) {
     A[][] a;
   }
