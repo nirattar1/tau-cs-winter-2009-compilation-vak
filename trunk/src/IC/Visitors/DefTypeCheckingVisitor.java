@@ -409,11 +409,14 @@ public class DefTypeCheckingVisitor implements Visitor {
 			}
 			// otherwise (method exists in class and is static) check arguments types
 			//TODO
+			
 		}catch (SemanticError se) { // class doesn't have this method
 			se.setLine(call.getLine());
 			System.err.println(se);
 			return null;
 		}
+		
+		return null; //remove this later
 	}
 
 	@Override
