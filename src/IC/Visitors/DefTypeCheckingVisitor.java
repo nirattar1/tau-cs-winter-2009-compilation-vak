@@ -10,6 +10,15 @@ import IC.SymbolTable.*;
  * - Type checks
  */
 public class DefTypeCheckingVisitor implements Visitor {
+	private IC.SymbolTable.GlobalSymbolTable global;
+	
+	/**
+	 * constructor
+	 * @param global: the program's global symbol table
+	 */
+	public DefTypeCheckingVisitor(IC.SymbolTable.GlobalSymbolTable global){
+		this.global = global;
+	}
 
 	@Override
 	/**
@@ -156,8 +165,13 @@ public class DefTypeCheckingVisitor implements Visitor {
 	 */
 	public Object visit(Return returnStatement) {
 		// check return statement recursively
-		IC.TypeTable.Type returnedValueType = (IC.TypeTable.Type) returnStatement.getValue().accept(this);
-		if (returnedValueType == null) return null;
+		IC.TypeTable.Type returnedValueType = null; // dummy initialization
+		if (returnStatement.hasValue()){
+			returnedValueType = (IC.TypeTable.Type) returnStatement.getValue().accept(this);
+			if (returnedValueType == null) return null;
+		} else try{
+			returnedValueType = TypeTable.getType("void");
+		} catch(SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, Return visitor");} // will never get here
 		
 		// type check
 		// check that the return type is the same type / subtype of the enclosing method's type
@@ -169,8 +183,8 @@ public class DefTypeCheckingVisitor implements Visitor {
 						returnedValueType.getName()));
 				return null;
 			}
-		} catch (SemanticError se){} // will never get here
-
+		} catch (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, Return visitor");} // will never get here
+		
 		return true;
 	}
 
@@ -195,7 +209,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 						conditionType.getName()));
 				return null;
 			}
-		} catch (SemanticError se){} // will never get here
+		} catch (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, If visitor");} // will never get here
 		
 		// check operation, elseOperation recursively
 		if (ifStatement.getOperation().accept(this) == null) return null;
@@ -227,7 +241,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 						conditionType.getName()));
 				return null;
 			}
-		} catch (SemanticError se){} // will never get here
+		} catch (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, While visitor");} // will never get here
 		
 		// check operation recursively
 		if (whileStatement.getOperation().accept(this) == null) return null;
@@ -289,16 +303,53 @@ public class DefTypeCheckingVisitor implements Visitor {
 							initValueType.getName()));
 					return null;
 				}
-			} catch (SemanticError se){} // will never get here
+			} catch (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, LocalVariable visitor");} // will never get here
 		}
 		
 		return true;
 	}
 
 	@Override
+	/**
+	 * VariableLocation visitor:
+	 * - recursive call to location (if exists)
+	 * returns null if encountered an error, and the location type otherwise
+	 */
 	public Object visit(VariableLocation location) {
-		// TODO Auto-generated method stub
-		return null;
+		// recursive call to location (if exists)
+		if (location.isExternal()){
+			IC.TypeTable.Type locationType = (IC.TypeTable.Type) location.getLocation().accept(this);
+			if (locationType == null) return null;
+			// check if the location is a class type
+			try{
+				TypeTable.getClassType(locationType.getName());
+				// if location is a class, check that it has a field with this name
+				IC.SymbolTable.ClassSymbolTable cst = this.global.getClassSymbolTable(locationType.getName());
+				try{
+					IC.SymbolTable.FieldSymbol fs = cst.getFieldSymbolRec(location.getName());
+					// return the type of this field
+					return fs.getType(); // this line will never throw error
+				} catch(SemanticError se){ // the external location has no field with this name 
+					se.setLine(location.getLine());
+					System.err.println(se);
+					return null;
+				}
+			} catch(SemanticError se){ // in case the external location is not a user defined class 
+				System.err.println(new SemanticError("location of type "+locationType.getName()+" does not have field",
+						location.getLine(),
+						location.getName()));
+				return null;
+			}
+		} else { // this location is not external
+			try{
+				IC.TypeTable.Type thisLocationType = ((BlockSymbolTable) location.getEnclosingScope()).getVarSymbolRec(location.getName()).getType();
+				return thisLocationType;
+			} catch(SemanticError se){ // in case this location is not defined
+				se.setLine(location.getLine());
+				System.err.println(se);
+				return null;
+			}
+		}
 	}
 
 	@Override
