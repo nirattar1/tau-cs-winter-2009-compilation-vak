@@ -353,6 +353,11 @@ public class DefTypeCheckingVisitor implements Visitor {
 	}
 
 	@Override
+	/**
+	 * ArrayLocation visitor:
+	 * - recursive call to array and index
+	 * returns null if encountered an error, and the array[index] type otherwise
+	 */
 	public Object visit(ArrayLocation location) {
 		// TODO Auto-generated method stub
 		return null;
