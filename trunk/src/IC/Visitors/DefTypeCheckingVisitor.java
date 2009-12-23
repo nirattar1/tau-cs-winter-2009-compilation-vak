@@ -109,6 +109,12 @@ public class DefTypeCheckingVisitor implements Visitor {
 	}
 
 	@Override
+	/**
+	 * Assignment visitor:
+	 * - recursive calls to location and assignment
+	 * - type check: check that the assignment type <= location type
+	 * returns null if encountered an error, true otherwise
+	 */
 	public Object visit(Assignment assignment) {
 		// check location recursively
 		IC.TypeTable.Type locationType = (IC.TypeTable.Type) assignment.getVariable().accept(this);
@@ -118,7 +124,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 		if (assignmentType == null) return null;
 		
 		// type check
-		// check that the assignment is of the same type as the location type
+		// check that the assignment is of the same type / subtype of the location type
 		if (!assignmentType.subtypeOf(locationType)){
 			System.err.println(new SemanticError("type mismatch, not of type "+locationType.getName(),
 					assignment.getLine(),
