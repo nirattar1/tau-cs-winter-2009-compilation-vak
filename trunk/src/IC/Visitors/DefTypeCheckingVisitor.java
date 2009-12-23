@@ -356,17 +356,64 @@ public class DefTypeCheckingVisitor implements Visitor {
 	/**
 	 * ArrayLocation visitor:
 	 * - recursive call to array and index
-	 * returns null if encountered an error, and the array[index] type otherwise
+	 * - type check: check that the index is of type int
+	 * returns null if encountered an error, and the array element type otherwise
 	 */
 	public Object visit(ArrayLocation location) {
-		// TODO Auto-generated method stub
-		return null;
+		// recursive call to array
+		IC.TypeTable.ArrayType arrayType = (IC.TypeTable.ArrayType) location.getArray().accept(this);
+		if (arrayType == null) return null;
+		//recursive call to index
+		IC.TypeTable.Type indexType = (IC.TypeTable.Type) location.getIndex().accept(this);
+		if (indexType == null) return null;
+		// type check
+		// check that index is of type int
+		try{
+			if (!indexType.subtypeOf(TypeTable.getType("int"))){
+				System.err.println(new SemanticError("Array index must be of type int, type is",
+						location.getLine(),
+						arrayType.getName()));
+				return null;
+			}
+		}catch(SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, ArrayLocation visitor");} // will never get here
+		
+		return arrayType.getElemType();
 	}
 
 	@Override
+	/**
+	 * StaticCall visitor:
+	 * - recursive call to arguments
+	 * - check that the method is defined in the enclosing class
+	 * - type checks: check that all argument correspond to the method's arguments types
+	 * returns null if encountered an error, and the method return type otherwise
+	 */
 	public Object visit(StaticCall call) {
-		// TODO Auto-generated method stub
-		return null;
+		// check if the class in the static call exists
+		IC.SymbolTable.ClassSymbolTable cst = global.getClassSymbolTable(call.getClassName());
+		if (cst == null){ // class does not exist
+			System.err.println(new SemanticError("Class does not exist",
+					call.getLine(),
+					call.getClassName()));
+			return null;
+		}
+		// check the method is defined (as static) in enclosing class
+		try{
+			IC.SymbolTable.MethodSymbol ms = cst.getMethodSymbolRec(call.getName());
+			// check if the method is static
+			if (!ms.isStatic()){
+				System.err.println(new SemanticError("Method is not static",
+						call.getLine(),
+						call.getName()));
+				return null;
+			}
+			// otherwise (method exists in class and is static) check arguments types
+			//TODO
+		}catch (SemanticError se) { // class doesn't have this method
+			se.setLine(call.getLine());
+			System.err.println(se);
+			return null;
+		}
 	}
 
 	@Override
