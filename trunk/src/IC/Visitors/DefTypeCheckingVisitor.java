@@ -1,7 +1,8 @@
 package IC.Visitors;
 
 import IC.AST.*;
-import IC.TypeTable.SemanticError;
+import IC.TypeTable.*;
+import IC.SymbolTable.*;
 
 /**
  * Visitor for resolving the following issues:
@@ -136,51 +137,162 @@ public class DefTypeCheckingVisitor implements Visitor {
 	}
 
 	@Override
+	/**
+	 * CallStatement visitor:
+	 * - recursive calls to call
+	 * returns null if encountered an error, true otherwise
+	 */
 	public Object visit(CallStatement callStatement) {
-		// TODO Auto-generated method stub
-		return null;
+		if (callStatement.getCall().accept(this) == null) return null;
+		else return true;
 	}
 
 	@Override
+	/**
+	 * returnStatement visitor:
+	 * - recursive call to call (static or virtual call)
+	 * - type check: check that the returned call type <= enclosing method's type
+	 * returns null if encountered an error, true otherwise
+	 */
 	public Object visit(Return returnStatement) {
-		// TODO Auto-generated method stub
-		return null;
+		// check return statement recursively
+		IC.TypeTable.Type returnedValueType = (IC.TypeTable.Type) returnStatement.getValue().accept(this);
+		if (returnedValueType == null) return null;
+		
+		// type check
+		// check that the return type is the same type / subtype of the enclosing method's type
+		try{
+			IC.TypeTable.Type returnType = ((BlockSymbolTable) returnStatement.getEnclosingScope()).getVarSymbolRec("_ret").getType();
+			if (!returnedValueType.subtypeOf(returnType)){
+				System.err.println(new SemanticError("type mismatch, not of type "+returnType.getName(),
+						returnStatement.getLine(),
+						returnedValueType.getName()));
+				return null;
+			}
+		} catch (SemanticError se){} // will never get here
+
+		return true;
 	}
 
 	@Override
+	/**
+	 * If visitor:
+	 * - recursive calls condition, operation and elseOperation
+	 * - type check: check that the condition type is of type boolean
+	 * returns null if encountered an error, true otherwise
+	 */
 	public Object visit(If ifStatement) {
-		// TODO Auto-generated method stub
-		return null;
+		// check condition recursively
+		IC.TypeTable.Type conditionType = (IC.TypeTable.Type) ifStatement.getCondition().accept(this);
+		if (conditionType == null) return null;
+		
+		// type check
+		// check that the condition is of type boolean
+		try{
+			if (!conditionType.subtypeOf(TypeTable.getType("boolean"))){
+				System.err.println(new SemanticError("condition in if statement not of type boolean",
+						ifStatement.getCondition().getLine(),
+						conditionType.getName()));
+				return null;
+			}
+		} catch (SemanticError se){} // will never get here
+		
+		// check operation, elseOperation recursively
+		if (ifStatement.getOperation().accept(this) == null) return null;
+		if (ifStatement.hasElse()){
+			if (ifStatement.getElseOperation().accept(this) == null) return null;
+		}
+		
+		return true;
 	}
 
 	@Override
+	/**
+	 * While visitor:
+	 * - recursive calls condition and operation
+	 * - type check: check that the condition type is of type boolean
+	 * returns null if encountered an error, true otherwise
+	 */
 	public Object visit(While whileStatement) {
-		// TODO Auto-generated method stub
-		return null;
+		// check condition recursively
+		IC.TypeTable.Type conditionType = (IC.TypeTable.Type) whileStatement.getCondition().accept(this);
+		if (conditionType == null) return null;
+		
+		// type check
+		// check that the condition is of type boolean
+		try{
+			if (!conditionType.subtypeOf(TypeTable.getType("boolean"))){
+				System.err.println(new SemanticError("condition in while statement not of type boolean",
+						whileStatement.getCondition().getLine(),
+						conditionType.getName()));
+				return null;
+			}
+		} catch (SemanticError se){} // will never get here
+		
+		// check operation recursively
+		if (whileStatement.getOperation().accept(this) == null) return null;
+		
+		return true;
 	}
 
 	@Override
+	/**
+	 * Break visitor: does nothing
+	 */
 	public Object visit(Break breakStatement) {
-		// TODO Auto-generated method stub
-		return null;
+		return true;
 	}
 
 	@Override
+	/**
+	 * Continue visitor: does nothing
+	 */
 	public Object visit(Continue continueStatement) {
-		// TODO Auto-generated method stub
-		return null;
+		return true;
 	}
 
 	@Override
+	/**
+	 * StatementsBlock visitor:
+	 * - recursive calls to all statements
+	 * returns null if encountered an error, true otherwise
+	 */
 	public Object visit(StatementsBlock statementsBlock) {
-		// TODO Auto-generated method stub
-		return null;
+		// recursive call to all statements
+		for(Statement s: statementsBlock.getStatements()){
+			if (s.accept(this) == null) return null;
+		}
+		return true;
 	}
 
 	@Override
+	/**
+	 * LocalVariable visitor:
+	 * - recursive call to initValue (if exists)
+	 * - type check: check that the initValue type is a subtype of the local variable's type
+	 * returns null if encountered an error, true otherwise
+	 */
 	public Object visit(LocalVariable localVariable) {
-		// TODO Auto-generated method stub
-		return null;
+		// recursive call to initValue
+		if (localVariable.hasInitValue()){
+			IC.TypeTable.Type initValueType = (IC.TypeTable.Type) localVariable.getInitValue().accept(this);
+			if (initValueType == null) return null;
+			
+			try{
+				// type check
+				// check that the initValue type is a subtype of the local variable's type
+				IC.TypeTable.Type localVariableType = ((BlockSymbolTable) localVariable.getEnclosingScope()).getVarSymbol(localVariable.getName()).getType();
+			
+				if (!initValueType.subtypeOf(localVariableType)){
+					System.err.println(new SemanticError("type mismatch, not of type "+localVariableType.getName(),
+							localVariable.getLine(),
+							initValueType.getName()));
+					return null;
+				}
+			} catch (SemanticError se){} // will never get here
+		}
+		
+		return true;
 	}
 
 	@Override

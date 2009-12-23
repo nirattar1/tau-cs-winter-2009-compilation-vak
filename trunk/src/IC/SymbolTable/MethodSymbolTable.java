@@ -9,7 +9,7 @@ import java.util.*;
  *
  */
 public class MethodSymbolTable extends BlockSymbolTable {
-	private ReturnVarSymbol returnVarSymbol;
+	//private ReturnVarSymbol returnVarSymbol;
 	private String name;
 	private boolean isStatic;
 	
@@ -55,7 +55,11 @@ public class MethodSymbolTable extends BlockSymbolTable {
 	 * @return
 	 */
 	public ReturnVarSymbol getReturnVarSymbol(){
-		return this.returnVarSymbol;
+		try{
+			return (ReturnVarSymbol) this.getVarParamSymbol("_ret");
+		} catch (SemanticError se){ // never get here
+			return null;
+		}
 	}
 	
 	/**
@@ -65,7 +69,7 @@ public class MethodSymbolTable extends BlockSymbolTable {
 	 * @throws SemanticError
 	 */
 	public void setReturnVarSymbol(String typeName) throws SemanticError{
-		this.returnVarSymbol = new ReturnVarSymbol("_ret",typeName);
+		this.varEntries.put("_ret", new ReturnVarSymbol("_ret", typeName));
 	}
 	
 	/**

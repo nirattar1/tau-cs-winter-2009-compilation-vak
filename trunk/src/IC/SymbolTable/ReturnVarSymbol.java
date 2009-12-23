@@ -7,11 +7,10 @@ import IC.TypeTable.TypeTable;
  * Dynamic class for symbol of type method returned variable (for MethodSymbolTable only)
  *
  */
-public class ReturnVarSymbol extends Symbol {
+public class ReturnVarSymbol extends VarSymbol {
 	
 	public ReturnVarSymbol(String symName, String typeName) throws SemanticError{
-		super(symName);
-		this.type = TypeTable.getType(typeName);
+		super(symName, typeName);
 	}
 	
 	public String getKind(){
