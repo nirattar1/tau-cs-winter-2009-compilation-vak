@@ -17,7 +17,8 @@ public class ClassType extends Type {
 	
 	public boolean subtypeOf(Type t){
 		if (!(t instanceof ClassType)) return false;	// t is not a class type		
-		if (t.getName() == this.getName()) return true;	// t is me
+		if (t == this) return true;						// t is me
+		//if (t.getName() == this.getName()) return true;
 		if (this.super_name == null) return false;		// I don't have a super
 		else try{
 			return TypeTable.getClassType(super_name).subtypeOf(t);	// try my super class

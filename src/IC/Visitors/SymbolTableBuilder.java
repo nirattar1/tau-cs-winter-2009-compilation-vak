@@ -147,7 +147,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 			
 			// check if previously defined as field or method
 			// if method is previously defined in this class scope or in a super class with
-			// a different signature, error. else, add a new MethodSymbol to the Symbol Table.
+			// a different signature (including if it's static or not), error. else, add a new MethodSymbol to the Symbol Table.
 			try{
 				cst.getFieldSymbolRec(m.getName());
 				// if got here, method is previously defined as field, print error
@@ -162,7 +162,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 				} catch (SemanticError e2){ // e2 will not be handled
 					try{
 						MethodSymbol prevMS = cst.getMethodSymbolRec(m.getName());
-						if (!prevMS.getType().equals(ms.getType())){
+						if (!prevMS.getType().equals(ms.getType()) || (prevMS.isStatic() != ms.isStatic())){
 							// if got here, method is previously defined in super-class with a different signature, print error
 							System.err.println(new SemanticError(
 									"method is previously defined, overloading not allowed",

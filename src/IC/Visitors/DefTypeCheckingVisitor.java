@@ -3,6 +3,7 @@ package IC.Visitors;
 import IC.AST.*;
 import IC.TypeTable.*;
 import IC.SymbolTable.*;
+import java.util.*;
 
 /**
  * Visitor for resolving the following issues:
@@ -397,7 +398,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 					call.getClassName()));
 			return null;
 		}
-		// check the method is defined (as static) in enclosing class
+		// check that the method is defined (as static) in enclosing class
 		try{
 			IC.SymbolTable.MethodSymbol ms = cst.getMethodSymbolRec(call.getName());
 			// check if the method is static
@@ -408,15 +409,36 @@ public class DefTypeCheckingVisitor implements Visitor {
 				return null;
 			}
 			// otherwise (method exists in class and is static) check arguments types
-			//TODO
-			
-		}catch (SemanticError se) { // class doesn't have this method
+			Iterator<IC.TypeTable.Type> methodArgsTypeIter = ((IC.TypeTable.MethodType) ms.getType()).getParamTypes().iterator();
+			for(Expression arg: call.getArguments()){
+				IC.TypeTable.Type argType = (IC.TypeTable.Type) arg.accept(this);
+				if (!argType.subtypeOf(methodArgsTypeIter.next())){ // wrong argument type sent to method
+					System.err.println(new SemanticError("Wrong argument type passed to method",
+							call.getLine(),
+							argType.getName()));
+					return null;
+				}
+			}
+			// check if method expects more parameters
+			if (methodArgsTypeIter.hasNext()){
+				System.err.println(new SemanticError("Too few arguments passed to method",
+						call.getLine(),
+						call.getName()));
+				return null;
+			}
+			// Finally if got here, return the method's return type
+			///////////////////////////////////////////////////////
+			return ((IC.TypeTable.MethodType) ms.getType()).getReturnType();
+		}catch (SemanticError se) { // class (or its supers) doesn't have this method
 			se.setLine(call.getLine());
 			System.err.println(se);
 			return null;
+		}catch (NoSuchElementException nsee){ // method's parameters list is shorter than the arguments list
+			System.err.println(new SemanticError("Too many arguments passed to method",
+					call.getLine(),
+					call.getName()));
+			return null;
 		}
-		
-		return null; //remove this later
 	}
 
 	@Override
