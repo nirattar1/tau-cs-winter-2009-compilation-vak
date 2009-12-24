@@ -716,15 +716,45 @@ public class DefTypeCheckingVisitor implements Visitor {
 	}
 
 	@Override
+	/**
+	 * a Visitor for MathUnaryOp - only one math unary operation - unary minus. 
+	 * checks that the operand is of type int.
+	 * returns type int.
+	 */
 	public Object visit(MathUnaryOp unaryOp) {
-		// TODO Auto-generated method stub
-		return null;
+		IC.TypeTable.Type opType = (IC.TypeTable.Type) unaryOp.getOperand().accept(this);
+		if (opType == null) return null;
+		
+		try{
+			if (!opType.subtypeOf(TypeTable.getType("int"))){// opType is not an integer
+				System.err.println(new SemanticError("Mathematical unary operation on a non int type",
+						unaryOp.getLine(),
+						opType.getName()));
+				return null;
+			}
+		}catch  (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, MathUnaryOP visitor");} // will never get here
+		return opType;
 	}
 
 	@Override
+	/**
+	 * a Visitor for LogicalUnaryOp - only one logic unary operation - unary logical negation. 
+	 * checks that the operand is of type boolean.
+	 * returns type boolean.
+	 */
 	public Object visit(LogicalUnaryOp unaryOp) {
-		// TODO Auto-generated method stub
-		return null;
+		IC.TypeTable.Type opType = (IC.TypeTable.Type) unaryOp.getOperand().accept(this);
+		if (opType == null) return null;
+		
+		try{
+			if (!opType.subtypeOf(TypeTable.getType("boolean"))){// opType is not a boolean
+				System.err.println(new SemanticError("Logical unary operation on a non boolean type",
+						unaryOp.getLine(),
+						opType.getName()));
+				return null;
+			}
+		}catch  (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, LogicalUnaryOP visitor");} // will never get here
+		return opType;
 	}
 
 	@Override
