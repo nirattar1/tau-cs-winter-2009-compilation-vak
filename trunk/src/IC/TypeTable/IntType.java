@@ -9,7 +9,8 @@ public class IntType extends Type {
 	}
 	
 	public boolean subtypeOf(Type t){
-		if (t.getName() == this.getName()) return true;
+		if (t == this) return true;
+		//if (t.getName() == this.getName()) return true;
 		else return false;
 	}
 }
