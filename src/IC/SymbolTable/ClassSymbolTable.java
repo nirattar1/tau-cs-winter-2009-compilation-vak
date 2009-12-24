@@ -167,6 +167,24 @@ public class ClassSymbolTable extends SymbolTable {
 	}
 	
 	/**
+	 * gets a class symbol table, through the hierarchy
+	 * @param name - class name
+	 * @return
+	 */
+	public ClassSymbolTable getClassSymbolTableRec(String name){
+		ClassSymbolTable csm = classSymbolTableEntries.get(name);
+		if (csm != null) return csm;
+		else {
+			for (ClassSymbolTable csm_l: classSymbolTableEntries.values()){
+				csm = csm_l.getClassSymbolTableRec(name);
+				if (csm != null) return csm;
+			}
+		}
+		return null;
+	}
+
+	
+	/**
 	 * returns string representation for the ClassSymbolTable fitting the "-dump-symtab" IC.Compiler flag
 	 */
 	public String toString(){

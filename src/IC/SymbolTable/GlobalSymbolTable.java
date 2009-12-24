@@ -53,6 +53,24 @@ public class GlobalSymbolTable extends SymbolTable {
 	}
 	
 	/**
+	 * gets a class symbol table, through the hierarchy 
+	 * @param name - class name
+	 * @return The class if it exists, null if no such class exists.
+	 */
+	public ClassSymbolTable getClassSymbolTableRec(String name){
+		ClassSymbolTable csm = classSymbolTableEntries.get(name);
+		if (csm != null) return csm;
+		else {
+			for (ClassSymbolTable csm_l: classSymbolTableEntries.values()){
+				csm = csm_l.getClassSymbolTableRec(name);
+				if (csm != null) return csm;
+			}
+		}
+		return null;
+	}
+
+	
+	/**
 	 * returns string representation for the GlobalSymbolTable fitting the "-dump-symtab" IC.Compiler flag
      * @param icFileName: the name of the ic input program file
 	 * @return

@@ -12,6 +12,8 @@ import java.util.*;
  */
 public class DefTypeCheckingVisitor implements Visitor {
 	private IC.SymbolTable.GlobalSymbolTable global;
+	private boolean inStatic = false;
+	private boolean inLoop = false;
 	
 	/**
 	 * constructor
@@ -84,7 +86,10 @@ public class DefTypeCheckingVisitor implements Visitor {
 	 * StaticMethod visitor: see methodVisitHelper documentation
 	 */
 	public Object visit(StaticMethod method) {
-		return methodVisitHelper(method);
+		inStatic = true;
+		Object ret = methodVisitHelper(method);
+		inStatic = false;
+		return ret;
 	}
 
 	@Override
@@ -245,24 +250,43 @@ public class DefTypeCheckingVisitor implements Visitor {
 		} catch (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, While visitor");} // will never get here
 		
 		// check operation recursively
-		if (whileStatement.getOperation().accept(this) == null) return null;
+		inLoop = true;
+		if (whileStatement.getOperation().accept(this) == null) {
+			inLoop = false;
+			return null;
+		}
+		inLoop = false;
 		
 		return true;
 	}
 
 	@Override
 	/**
-	 * Break visitor: does nothing
+	 * Break visitor: checks that in while loop
 	 */
 	public Object visit(Break breakStatement) {
+		if (!inLoop){
+			System.err.println(new SemanticError("'break' statement not in loop",
+					breakStatement.getLine(),
+					"break"));
+			return null;
+		}
+		
 		return true;
 	}
 
 	@Override
 	/**
-	 * Continue visitor: does nothing
+	 * Continue visitor: checks that in while loop
 	 */
 	public Object visit(Continue continueStatement) {
+		if (!inLoop){
+			System.err.println(new SemanticError("'continue' statement not in loop",
+					continueStatement.getLine(),
+					"continue"));
+			return null;
+		}
+
 		return true;
 	}
 
@@ -391,7 +415,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 	 */
 	public Object visit(StaticCall call) {
 		// check if the class in the static call exists
-		IC.SymbolTable.ClassSymbolTable cst = global.getClassSymbolTable(call.getClassName());
+		IC.SymbolTable.ClassSymbolTable cst = global.getClassSymbolTableRec(call.getClassName());
 		if (cst == null){ // class does not exist
 			System.err.println(new SemanticError("Class does not exist",
 					call.getLine(),
@@ -412,6 +436,9 @@ public class DefTypeCheckingVisitor implements Visitor {
 			Iterator<IC.TypeTable.Type> methodArgsTypeIter = ((IC.TypeTable.MethodType) ms.getType()).getParamTypes().iterator();
 			for(Expression arg: call.getArguments()){
 				IC.TypeTable.Type argType = (IC.TypeTable.Type) arg.accept(this);
+				
+				if (argType == null) return null;
+				
 				if (!argType.subtypeOf(methodArgsTypeIter.next())){ // wrong argument type sent to method
 					System.err.println(new SemanticError("Wrong argument type passed to method",
 							call.getLine(),
@@ -442,45 +469,250 @@ public class DefTypeCheckingVisitor implements Visitor {
 	}
 
 	@Override
+	/**
+	 * VirtualCall visitor:
+	 * - recursive call to arguments
+	 * - check that the method is defined in the enclosing class
+	 * - type checks: check that all argument correspond to the method's arguments types
+	 * returns null if encountered an error, and the method return type otherwise
+	 */
 	public Object visit(VirtualCall call) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		IC.SymbolTable.ClassSymbolTable cst = null;
+		
+		if (call.isExternal()){// call has an external location
+			IC.TypeTable.Type locType = (IC.TypeTable.Type) call.getLocation().accept(this); 
+			if (locType == null) return null; // visitor of the location encountered an error.
+			
+			cst = global.getClassSymbolTableRec(locType.getName());
+			if (cst == null){ // Location not a class
+				System.err.println(new SemanticError("Location not of a user defined type",
+						call.getLine(),
+						locType.getName()));
+				return null;
+			}
+		}else { // not an external call
+			cst = ((BlockSymbolTable)call.getEnclosingScope()).getEnclosingClassSymbolTable();
+		}
+		
+		MethodSymbol ms = null;
+		try{
+			ms = cst.getMethodSymbolRec(call.getName());
+		} catch (SemanticError se) {// When method name is invalid.
+			se.setLine(call.getLine());
+			System.err.println(se);
+			return null;
+		}
+		
+		if (ms.isStatic()){
+			System.err.println(new SemanticError("Static method is called virtually",
+					call.getLine(),
+					call.getName()));
+			return null;
+		}
+		// otherwise (method exists in class and is virtual) check arguments types
+		Iterator<IC.TypeTable.Type> methodArgsTypeIter = ((IC.TypeTable.MethodType) ms.getType()).getParamTypes().iterator();
+		for(Expression arg: call.getArguments()){
+			IC.TypeTable.Type argType = (IC.TypeTable.Type) arg.accept(this);
+			
+			if (argType == null) return null;
+			try{
+				if (!argType.subtypeOf(methodArgsTypeIter.next())){ // wrong argument type sent to method
+					System.err.println(new SemanticError("Wrong argument type passed to method",
+							call.getLine(),
+							argType.getName()));
+					return null;
+				}
+			}catch (NoSuchElementException nsee){
+				System.err.println(new SemanticError("Too many arguments passed to method",
+						call.getLine(),
+						call.getName()));
+				return null;
+			}
+		}
+		// check if method expects more parameters
+		if (methodArgsTypeIter.hasNext()){
+			System.err.println(new SemanticError("Too few arguments passed to method",
+					call.getLine(),
+					call.getName()));
+			return null;
+		}
+		// Finally if got here, return the method's return type
+		///////////////////////////////////////////////////////
+		return ((IC.TypeTable.MethodType) ms.getType()).getReturnType();
 	}
 
+	
 	@Override
+	/**
+	 * a Visitor for 'this' expression
+	 * checks that it is not referenced inside a static method.
+	 */
 	public Object visit(This thisExpression) {
-		// TODO Auto-generated method stub
-		return null;
+		if (inStatic) {
+			System.err.println(new SemanticError("'this' referenced in static method",
+					thisExpression.getLine(),
+					"this"));
+			return null;
+		}
+		return ((BlockSymbolTable) thisExpression.getEnclosingScope()).getEnclosingClassSymbolTable().getMySymbol().getType();
 	}
 
 	@Override
+	/**
+	 * a Visitor for the newClass expression
+	 * checks that the class type exists
+	 */
 	public Object visit(NewClass newClass) {
-		// TODO Auto-generated method stub
-		return null;
+		IC.TypeTable.ClassType ct = null;
+		try{
+			ct = IC.TypeTable.TypeTable.getClassType(newClass.getName());
+		}catch (SemanticError se){ // No such class exists
+			se.setLine(newClass.getLine());
+			System.err.println(se);
+			return null;
+		}
+		
+		return ct;
 	}
 
 	@Override
+	/**
+	 * a Visitor for NewArray expression.
+	 * checks that elem type is a legal type.
+	 * checks that size is of int type.
+	 * returns the arrayType.
+	 */
 	public Object visit(NewArray newArray) {
-		// TODO Auto-generated method stub
+		IC.TypeTable.Type elemType = null;
+		
+		try {
+			elemType = TypeTable.getType(newArray.getType().getFullName());
+		}catch (SemanticError se){ // illegal array elem type
+			se.setLine(newArray.getLine());
+			System.err.println(se);
+			return null;
+		}
+		
+		IC.TypeTable.Type sizeType = (IC.TypeTable.Type) newArray.getSize().accept(this);
+		
+		if (sizeType == null) return null; // size type visitor has encountered an error
+		try {
+			if (!sizeType.subtypeOf(TypeTable.getType("int"))){
+				System.err.println(new SemanticError("Array size not of int type",
+						newArray.getLine(),
+						sizeType.getName()));
+				return null;
+			}
+		} catch (SemanticError se) {System.err.println("*** BUG1: DefTypeCheckingVisitor, newArray visitor");} // will never get here
+		
+		try{
+			return TypeTable.getType(elemType.getName()+"[]");
+		}catch (SemanticError se) {System.err.println("*** BUG2: DefTypeCheckingVisitor, newArray visitor");} // will never get here
+		
 		return null;
 	}
 
 	@Override
+	/**
+	 * a Visitor for the array.length type.
+	 * checks that array is an array.
+	 * returns the type int.
+	 */
 	public Object visit(Length length) {
-		// TODO Auto-generated method stub
+		IC.TypeTable.Type arrType = (IC.TypeTable.Type) length.getArray().accept(this);
+		
+		if (arrType == null) return null;
+		
+		if (!arrType.getName().endsWith("[]")){ // not array type.
+			System.err.println(new SemanticError("Not of array type",
+					length.getLine(),
+					arrType.getName()));
+			return null;			
+		}
+				
+		try { // array type. length is legal - return int type.
+			return TypeTable.getType("int");
+		} catch (SemanticError se) {System.err.println("*** BUG: DefTypeCheckingVisitor, Length visitor");} // will never get here
+		
 		return null;
 	}
 
 	@Override
+	/**
+	 * a Visitor for MathBinaryOp
+	 * checks that types are legal (int or string for +, int for everything else)
+	 * returns the type of the operation.
+	 */
 	public Object visit(MathBinaryOp binaryOp) {
-		// TODO Auto-generated method stub
-		return null;
+		IC.TypeTable.Type op1Type = (IC.TypeTable.Type) binaryOp.getFirstOperand().accept(this);
+		IC.TypeTable.Type op2Type = (IC.TypeTable.Type) binaryOp.getSecondOperand().accept(this);
+		if ((op1Type == null) || (op2Type == null)) return null;
+		if (op1Type != op2Type){ // check that both operands are of the same type
+			System.err.println(new SemanticError("Math operation on different types",
+					binaryOp.getLine(),
+					binaryOp.getOperator().getOperatorString()));
+			return null;
+		}
+
+		if (binaryOp.getOperator().getOperatorString() != "+"){// operator is one of "-","*","/","%"			
+			try{
+				if (!op1Type.subtypeOf(TypeTable.getType("int"))){// enough to check only one of the operands' type, since they are of the same type
+					System.err.println(new SemanticError("Math operation on a non int type",
+							binaryOp.getLine(),
+							op1Type.getName())); // returns the name of the type.
+					return null;
+				}
+			} catch (SemanticError se){System.err.println("*** BUG1: DefTypeCheckingVisitor, MathBinaryOP visitor");} // will never get here
+		}else{
+			try{
+				if (!op1Type.subtypeOf(TypeTable.getType("int")) && !op1Type.subtypeOf(TypeTable.getType("string"))){
+					System.err.println(new SemanticError("+ operation on an illegal type",
+							binaryOp.getLine(),
+							op1Type.getName()));
+					return null;
+				}
+			}catch (SemanticError se){System.err.println("*** BUG2: DefTypeCheckingVisitor, MathBinaryOP visitor");} // will never get here
+		}
+		// Legal types
+		return op1Type;
 	}
 
 	@Override
+	/**
+	 * a Visitor for LogicalBinaryOp
+	 * checks that operands are of the correct type
+	 * returns boolean type.
+	 */
 	public Object visit(LogicalBinaryOp binaryOp) {
-		// TODO Auto-generated method stub
-		return null;
+		IC.TypeTable.Type op1Type = (IC.TypeTable.Type) binaryOp.getFirstOperand().accept(this);
+		IC.TypeTable.Type op2Type = (IC.TypeTable.Type) binaryOp.getSecondOperand().accept(this);
+		if ((op1Type == null) || (op2Type == null)) return null;
+		if (!op1Type.subtypeOf(op2Type) && !op2Type.subtypeOf(op1Type)){ // either operand is a subtype of the other operand
+			System.err.println(new SemanticError("Logical operation between foreign types (at least on has to be subtype of another, or same type)",
+					binaryOp.getLine(),
+					binaryOp.getOperator().getOperatorString()));
+			return null;
+		}
+		
+		if ((binaryOp.getOperator().getOperatorString() != "==") || (binaryOp.getOperator().getOperatorString() != "!=")){ // operator is one of "<=",">=", "<", ">"
+			try{
+				if (!op1Type.subtypeOf(TypeTable.getType("int"))){
+					System.err.println(new SemanticError("Comparing non int values",
+							binaryOp.getLine(),
+							op1Type.getName()));
+					return null;
+				}
+			} catch (SemanticError se){System.err.println("*** BUG1: DefTypeCheckingVisitor, LogicalBinaryOP visitor");} // will never get here
+		}
+		
+		// types are legal. return boolean type.
+		IC.TypeTable.Type ret = null;
+		try{
+			ret = TypeTable.getType("boolean");
+		}catch (SemanticError se){System.err.println("*** BUG2: DefTypeCheckingVisitor, LogicalBinaryOP visitor");} // will never get here
+		
+		return ret;
 	}
 
 	@Override
