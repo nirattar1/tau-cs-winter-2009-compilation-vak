@@ -129,4 +129,13 @@ public class MethodSymbolTable extends BlockSymbolTable {
 		
 		return str;
 	}
+	
+	/**
+	 * returns the method's enclosing class
+	 * @return Enclosing Class
+	 */
+	public ClassSymbolTable getEnclosingClassSymbolTable(){
+		return (ClassSymbolTable) parent;
+	}
+
 }

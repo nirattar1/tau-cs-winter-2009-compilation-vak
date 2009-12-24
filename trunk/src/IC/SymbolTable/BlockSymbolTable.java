@@ -96,4 +96,13 @@ public class BlockSymbolTable extends SymbolTable {
 		
 		return str;
 	}
+	
+	/**
+	 * returns the block's enclosing class
+	 * @return Enclosing Class
+	 */
+	public ClassSymbolTable getEnclosingClassSymbolTable(){
+		return ((BlockSymbolTable) parent).getEnclosingClassSymbolTable();
+	}
+	
 }

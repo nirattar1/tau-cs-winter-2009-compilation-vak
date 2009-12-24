@@ -9,8 +9,8 @@ public class NullType extends Type {
 	}
 	
 	public boolean subtypeOf(Type t){
-		if (t == this) return true;
-		//if (t.getName() == this.getName()) return true;
-		else return false;
+		if (TypeTable.isPrimitive(t.getName())){
+			return false;
+		} else return true;
 	}
 }

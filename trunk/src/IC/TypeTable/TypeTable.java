@@ -147,4 +147,14 @@ public class TypeTable {
     	str += primitiveTypesStr+classTypesStr+arrayTypesStr+methodTypesStr;
     	return str;
     }
+    
+    /**
+     * Checks whether the name is of a primitive type (except for null or string).
+     * @param name - type name.
+     * @return true if type is primitive, false otherwise.
+     */
+    public static boolean isPrimitive(String name){
+    	return ((name == "int") || (name == "boolean") || (name == "void"));
+    }
+    
 }
