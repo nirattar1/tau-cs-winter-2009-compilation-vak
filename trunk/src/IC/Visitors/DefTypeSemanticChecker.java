@@ -12,7 +12,7 @@ import IC.BinaryOps;
  * - Type checks
  * - other semantic checks: "this" scope rules, "break" and "continue" scope rules
  */
-public class DefTypeCheckingVisitor implements Visitor {
+public class DefTypeSemanticChecker implements Visitor {
 	private IC.SymbolTable.GlobalSymbolTable global;
 	private boolean inStatic = false;
 	private boolean inLoop = false;
@@ -21,7 +21,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 	 * constructor
 	 * @param global: the program's global symbol table
 	 */
-	public DefTypeCheckingVisitor(IC.SymbolTable.GlobalSymbolTable global){
+	public DefTypeSemanticChecker(IC.SymbolTable.GlobalSymbolTable global){
 		this.global = global;
 	}
 
