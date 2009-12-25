@@ -491,7 +491,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 						locType.getName()));
 				return null;
 			}
-		}else { // not an external call
+		}else { // not an external call, check the enclosing class you are in now
 			cst = ((BlockSymbolTable)call.getEnclosingScope()).getEnclosingClassSymbolTable();
 		}
 		
@@ -688,7 +688,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 		IC.TypeTable.Type op1Type = (IC.TypeTable.Type) binaryOp.getFirstOperand().accept(this);
 		IC.TypeTable.Type op2Type = (IC.TypeTable.Type) binaryOp.getSecondOperand().accept(this);
 		if ((op1Type == null) || (op2Type == null)) return null;
-		if (!op1Type.subtypeOf(op2Type) && !op2Type.subtypeOf(op1Type)){ // either operand is a subtype of the other operand
+		if (!op1Type.subtypeOf(op2Type) && !op2Type.subtypeOf(op1Type)){ // neither operand is a subtype of the other operand
 			System.err.println(new SemanticError("Logical operation between foreign types (at least one has to be subtype of another, or of the same type)",
 					binaryOp.getLine(),
 					binaryOp.getOperator().getOperatorString()));
@@ -733,7 +733,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 				return null;
 			}
 		}catch  (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, MathUnaryOP visitor");} // will never get here
-		return opType;
+		return opType; // int
 	}
 
 	@Override
@@ -754,19 +754,37 @@ public class DefTypeCheckingVisitor implements Visitor {
 				return null;
 			}
 		}catch  (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, LogicalUnaryOP visitor");} // will never get here
-		return opType;
+		return opType; // boolean
 	}
 
 	@Override
+	/**
+	 * Literal visitor:
+	 * returns the type of the literal
+	 */
 	public Object visit(Literal literal) {
-		// TODO Auto-generated method stub
+		IC.LiteralTypes type = literal.getType();
+		try{
+			// return the corresponding type of the literal
+			switch (type){
+			case STRING: return TypeTable.getType("string");
+			case INTEGER: return TypeTable.getType("int");
+			case TRUE: return TypeTable.getType("boolean");
+			case FALSE: return TypeTable.getType("boolean");
+			case NULL: return TypeTable.getType("null");
+			}
+		}catch(SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, Literal visitor");} // will never get here
 		return null;
 	}
 
 	@Override
+	/**
+	 * ExpressionBlock visitor:
+	 * - recursive call to expression
+	 * returns null if encountered an error, and the type of the expression otherwise 
+	 */
 	public Object visit(ExpressionBlock expressionBlock) {
-		// TODO Auto-generated method stub
-		return null;
+		return (IC.TypeTable.Type) expressionBlock.getExpression().accept(this);  // will return null if encounters an error
 	}
 
 }
