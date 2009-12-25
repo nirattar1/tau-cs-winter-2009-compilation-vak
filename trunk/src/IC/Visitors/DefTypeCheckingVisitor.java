@@ -689,7 +689,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 		IC.TypeTable.Type op2Type = (IC.TypeTable.Type) binaryOp.getSecondOperand().accept(this);
 		if ((op1Type == null) || (op2Type == null)) return null;
 		if (!op1Type.subtypeOf(op2Type) && !op2Type.subtypeOf(op1Type)){ // either operand is a subtype of the other operand
-			System.err.println(new SemanticError("Logical operation between foreign types (at least on has to be subtype of another, or same type)",
+			System.err.println(new SemanticError("Logical operation between foreign types (at least one has to be subtype of another, or of the same type)",
 					binaryOp.getLine(),
 					binaryOp.getOperator().getOperatorString()));
 			return null;
