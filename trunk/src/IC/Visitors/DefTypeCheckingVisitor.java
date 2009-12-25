@@ -9,6 +9,7 @@ import java.util.*;
  * Visitor for resolving the following issues:
  * - check illegal use of undefined symbols
  * - Type checks
+ * - other semantic checks: "this" scope rules, "break" and "continue" scope rules
  */
 public class DefTypeCheckingVisitor implements Visitor {
 	private IC.SymbolTable.GlobalSymbolTable global;
