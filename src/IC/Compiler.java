@@ -121,7 +121,7 @@ public class Compiler {
 		////////////////////////////
 		
 		// build symbol tables and type table
-		// semantic checks for illegal definitions and existance and uniqueness of "main" method
+		// semantic checks for illegal definitions and existence and uniqueness of "main" method
 		SymbolTableBuilder symbolTableBuilder = new SymbolTableBuilder(args[0]);
 		Object globalSymTab = root.accept(symbolTableBuilder);
 		if (globalSymTab == null) System.exit(-1); // in case of an error while building symbol table
@@ -132,8 +132,8 @@ public class Compiler {
 		}
 		
 		// other semantic checks: variables usage correctness, type checks, scoping rules
-		DefTypeCheckingVisitor defTypeCheckingVisitor = new DefTypeCheckingVisitor((GlobalSymbolTable)globalSymTab);
-		Object semanticChecks = root.accept(defTypeCheckingVisitor);
+		DefTypeSemanticChecker defTypeSemanticChecker = new DefTypeSemanticChecker((GlobalSymbolTable)globalSymTab);
+		Object semanticChecks = root.accept(defTypeSemanticChecker);
 		if (semanticChecks == null) {
 			System.out.println("Encountered an error while type-checking");
 			System.exit(-1); // in case of a semantic error
