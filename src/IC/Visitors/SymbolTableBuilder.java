@@ -6,13 +6,15 @@ import IC.SymbolTable.*;
 import IC.TypeTable.*;
 
 /**
- * Visitor for building all Symbol tables (Gloabl, class, method and block), and check:
+ * Visitor for building all Symbol tables (Global, class, method and block), and check:
  * - illegal symbol redefinitions 
  * - illegal shadowing
  * - illegal methods overriding
+ * - existence and uniqueness of "main" method
  */
 public class SymbolTableBuilder implements IC.AST.Visitor{
 	private String icFileName;
+	private boolean hasMain = false;
 	
 	/**
 	 * constructor
@@ -30,6 +32,29 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 	 */
 	public String getFileName(){
 		return this.icFileName;
+	}
+	
+	/**
+	 * returns true iff the given method is the main method
+	 */
+	private static boolean isMainMethod(MethodSymbol ms, Method m){
+		if (!ms.isStatic()) return false; // method is not static
+		
+		if (ms.getName() != "main") return false; // method name is not "main"
+		
+		IC.TypeTable.MethodType mt = (IC.TypeTable.MethodType) ms.getType();
+		try{
+			if (!mt.getReturnType().subtypeOf(TypeTable.getType("void"))) return false; // return type is not void
+			Iterator<IC.TypeTable.Type> paramTypesIter = mt.getParamTypes().iterator();
+			if (!paramTypesIter.hasNext()) return false; // no parameters
+			IC.TypeTable.Type t = paramTypesIter.next();
+			if (!t.subtypeOf(TypeTable.arrayType(TypeTable.getType("string")))) return false; // param is not of type string[]
+			if (paramTypesIter.hasNext()) return false; // too many parameters
+		}catch(SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, Literal visitor");} // will never get here
+		
+		if (m.getFormals().get(0).getName() != "args") return false;
+		
+		return true;
 	}
 	
 	@Override
@@ -138,6 +163,18 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 			MethodSymbol ms;
 			try{
 				ms = new MethodSymbol(m);
+				// check if this method is "main" and check uniqueness
+				if (isMainMethod(ms, m)){
+					if (hasMain){
+						// already have "main" method, throw error
+						System.err.println(new SemanticError("Program already has main method",
+								m.getLine(),
+								ms.getName()));
+						return null;
+					} else {
+						hasMain = true;
+					}
+				}
 			} catch (SemanticError se){
 				// semantic error while creating the method symbol (some semantic type error)
 				se.setLine(m.getLine());
