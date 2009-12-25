@@ -46,8 +46,8 @@ precedence left LP, RP, LB, RB;
 
 // Derivation rules:
 libic ::= CLASS CLASS_ID:lib LCBR libmethod_list:lmlst RCBR
-	{: 	if (lib != "Library") throw new SemanticError("Library class must be named 'Library'",libleft,lib); // throw semantic error if library name not "Library"
-		RESULT = new ICClass(libleft, lib, new ArrayList<Field>(), lmlst);
+	{: if (lib.compareTo("Library") != 0) throw new SemanticError("Library class must be named 'Library'",libleft,lib); // throw semantic error if library name not "Library"
+	   RESULT = new ICClass(libleft, lib, new ArrayList<Field>(), lmlst);
 	   // System.out.println("Reduced rule class Library {lmlst} for lmlst=" + lmlst);
 	:}
 ;

@@ -39,9 +39,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 	 */
 	private static boolean isMainMethod(MethodSymbol ms, Method m){
 		if (!ms.isStatic()) return false; // method is not static
-		
-		if (ms.getName() != "main") return false; // method name is not "main"
-		
+		if (ms.getName().compareTo("main") != 0) return false; // method name is not "main"
 		IC.TypeTable.MethodType mt = (IC.TypeTable.MethodType) ms.getType();
 		try{
 			if (!mt.getReturnType().subtypeOf(TypeTable.getType("void"))) return false; // return type is not void
@@ -51,9 +49,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 			if (!t.subtypeOf(TypeTable.arrayType(TypeTable.getType("string")))) return false; // param is not of type string[]
 			if (paramTypesIter.hasNext()) return false; // too many parameters
 		}catch(SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, Literal visitor");} // will never get here
-		
-		if (m.getFormals().get(0).getName() != "args") return false;
-		
+		if (m.getFormals().get(0).getName().compareTo("args") != 0) return false;
 		return true;
 	}
 	
@@ -98,6 +94,11 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 			}
 		}
 		
+		// check if has main method
+		if (!hasMain){
+			System.err.println(new SemanticError("Program has no main method",0,""));
+			return null;
+		}
 		return global;
 	}
 	
