@@ -3,6 +3,7 @@ package IC;
 import java.io.*;
 import IC.Parser.*;
 import IC.AST.*;
+import IC.SymbolTable.GlobalSymbolTable;
 import IC.TypeTable.TypeTable;
 import IC.Visitors.*;
 
@@ -109,7 +110,6 @@ public class Compiler {
 		
 		// insert library class as another class in the input ic program, if exists
 		if (libic_flag) root.addClass(libraryRoot);
-		
 		// pretty-print the full AST to System.out
 		if (printast){
 			PrettyPrinter printer = new PrettyPrinter(args[0]);
@@ -121,13 +121,24 @@ public class Compiler {
 		////////////////////////////
 		
 		// build symbol tables and type table
+		// semantic checks for illegal definitions and existance and uniqueness of "main" method
 		SymbolTableBuilder symbolTableBuilder = new SymbolTableBuilder(args[0]);
-		
 		Object globalSymTab = root.accept(symbolTableBuilder);
+		if (globalSymTab == null) System.exit(-1); // in case of an error while building symbol table
 		
 		if (dumpsymtab){
 			System.out.println("\n"+globalSymTab);
 			System.out.println(TypeTable.staticToString());
+		}
+		
+		// other semantic checks: variables usage correctness, type checks, scoping rules
+		DefTypeCheckingVisitor defTypeCheckingVisitor = new DefTypeCheckingVisitor((GlobalSymbolTable)globalSymTab);
+		Object semanticChecks = root.accept(defTypeCheckingVisitor);
+		if (semanticChecks == null) {
+			System.out.println("Encountered an error while type-checking");
+			System.exit(-1); // in case of a semantic error
+		} else {
+			System.out.println("Passed type-checking");
 		}
 	}
 	
