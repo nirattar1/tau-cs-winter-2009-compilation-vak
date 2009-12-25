@@ -4,6 +4,7 @@ import IC.AST.*;
 import IC.TypeTable.*;
 import IC.SymbolTable.*;
 import java.util.*;
+import IC.BinaryOps;
 
 /**
  * Visitor for resolving the following issues:
@@ -656,7 +657,7 @@ public class DefTypeCheckingVisitor implements Visitor {
 			return null;
 		}
 
-		if (binaryOp.getOperator().getOperatorString().compareTo("+") != 0){// operator is one of "-","*","/","%"			
+		if (binaryOp.getOperator() != IC.BinaryOps.PLUS){// operator is one of "-","*","/","%"			
 			try{
 				if (!op1Type.subtypeOf(TypeTable.getType("int"))){// enough to check only one of the operands' type, since they are of the same type
 					System.err.println(new SemanticError("Math operation on a non int type",
@@ -696,8 +697,8 @@ public class DefTypeCheckingVisitor implements Visitor {
 			return null;
 		}
 		
-		if ((binaryOp.getOperator().getOperatorString().compareTo("==") != 0) ||
-				(binaryOp.getOperator().getOperatorString().compareTo("!=") != 0)){ // operator is one of "<=",">=", "<", ">"
+		if ((binaryOp.getOperator() != IC.BinaryOps.EQUAL) &&
+				(binaryOp.getOperator() != IC.BinaryOps.NEQUAL)){ // operator is one of "<=",">=", "<", ">"
 			try{
 				if (!op1Type.subtypeOf(TypeTable.getType("int"))){
 					System.err.println(new SemanticError("Comparing non int values",
