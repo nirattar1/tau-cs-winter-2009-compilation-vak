@@ -40,13 +40,11 @@ class B extends A {
 }
 
 class C {
+  A[][] arr;
   static void main(string[] args) {
     A[][] arr;
 	A a;
 	int x;
-	//A a2;
-	//a.vfunc(a,x,x);
-	a.vfunc(arr[5][x],x,x).j = 5;
-	//x = a.vfunc(arr[5][x],x,x).j;
+	a.vfunc(arr[5][x],x,x).j = (new c()).farr[2][15].str;
   }
 }
