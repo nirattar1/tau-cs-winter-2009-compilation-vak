@@ -351,7 +351,7 @@ public class DefTypeSemanticChecker implements Visitor {
 			try{
 				TypeTable.getClassType(locationType.getName());
 				// if location is a class, check that it has a field with this name
-				IC.SymbolTable.ClassSymbolTable cst = this.global.getClassSymbolTable(locationType.getName());
+				IC.SymbolTable.ClassSymbolTable cst = this.global.getClassSymbolTableRec(locationType.getName());
 				try{
 					IC.SymbolTable.FieldSymbol fs = cst.getFieldSymbolRec(location.getName());
 					// return the type of this field
