@@ -49,7 +49,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 			if (!t.subtypeOf(TypeTable.arrayType(TypeTable.getType("string")))) return false; // param is not of type string[]
 			if (paramTypesIter.hasNext()) return false; // too many parameters
 		}catch(SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, Literal visitor");} // will never get here
-		if (m.getFormals().get(0).getName().compareTo("args") != 0) return false;
+		//if (m.getFormals().get(0).getName().compareTo("args") != 0) return false;
 		return true;
 	}
 	
