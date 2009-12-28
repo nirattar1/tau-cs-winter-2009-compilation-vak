@@ -493,8 +493,14 @@ public class DefTypeSemanticChecker implements Visitor {
 						locType.getName()));
 				return null;
 			}
-		}else { // not an external call, check the enclosing class you are in now
+		}else { // not an external call, check you are not in a static scope, and check the enclosing class you are in now
 			cst = ((BlockSymbolTable)call.getEnclosingScope()).getEnclosingClassSymbolTable();
+			if (inStatic){
+				System.err.println(new SemanticError("Calling a local virtual method from a static scope",
+						call.getLine(),
+						call.getName()));
+				return null;
+			}
 		}
 		
 		MethodSymbol ms = null;
@@ -691,14 +697,38 @@ public class DefTypeSemanticChecker implements Visitor {
 		IC.TypeTable.Type op2Type = (IC.TypeTable.Type) binaryOp.getSecondOperand().accept(this);
 		if ((op1Type == null) || (op2Type == null)) return null;
 		if (!op1Type.subtypeOf(op2Type) && !op2Type.subtypeOf(op1Type)){ // neither operand is a subtype of the other operand
-			System.err.println(new SemanticError("Logical operation between foreign types (at least one has to be subtype of another, or of the same type)",
-					binaryOp.getLine(),
-					binaryOp.getOperator().getOperatorString()));
-			return null;
+			if (binaryOp.getOperator() == IC.BinaryOps.LAND || 
+					binaryOp.getOperator() == IC.BinaryOps.LOR){ // operator is one of "||","&&" 
+				System.err.println(new SemanticError("Logical operation on non boolean type",
+						binaryOp.getLine(),
+						binaryOp.getOperator().getOperatorString()));
+				return null;
+			} else if (binaryOp.getOperator() == IC.BinaryOps.EQUAL || 
+					binaryOp.getOperator() == IC.BinaryOps.NEQUAL) { // operator is one of "==", "!=" 
+				System.err.println(new SemanticError("Comparing foreign types (at least one has to be subtype of another, or of the same type)",
+						binaryOp.getLine(),
+						binaryOp.getOperator().getOperatorString()));
+				return null;				
+			}else { // operator is one of "<=",">=","<",">"
+				System.err.println(new SemanticError("Comparing non int values",
+						binaryOp.getLine(),
+						binaryOp.getOperator().getOperatorString()));
+				return null;
+			}
 		}
 		
-		if ((binaryOp.getOperator() != IC.BinaryOps.EQUAL) &&
-				(binaryOp.getOperator() != IC.BinaryOps.NEQUAL)){ // operator is one of "<=",">=", "<", ">"
+		if ((binaryOp.getOperator() == IC.BinaryOps.LAND) ||
+				(binaryOp.getOperator() == IC.BinaryOps.LOR)){// operator is one of "||","&&"
+			try{
+				if (!op1Type.subtypeOf(TypeTable.getType("boolean"))){
+					System.err.println(new SemanticError("Logical operation on non boolean values",
+							binaryOp.getLine(),
+							op1Type.getName()));
+					return null;
+				}
+			} catch (SemanticError se){System.err.println("*** BUG1: DefTypeCheckingVisitor, LogicalBinaryOP visitor");} // will never get here
+		} else if (binaryOp.getOperator() != IC.BinaryOps.EQUAL && 
+				binaryOp.getOperator() != IC.BinaryOps.NEQUAL) {// operator is one of "<=",">=", "<", ">"
 			try{
 				if (!op1Type.subtypeOf(TypeTable.getType("int"))){
 					System.err.println(new SemanticError("Comparing non int values",
@@ -706,14 +736,14 @@ public class DefTypeSemanticChecker implements Visitor {
 							op1Type.getName()));
 					return null;
 				}
-			} catch (SemanticError se){System.err.println("*** BUG1: DefTypeCheckingVisitor, LogicalBinaryOP visitor");} // will never get here
+			} catch (SemanticError se){System.err.println("*** BUG2: DefTypeCheckingVisitor, LogicalBinaryOP visitor");} // will never get here
 		}
 		
 		// types are legal. return boolean type.
 		IC.TypeTable.Type ret = null;
 		try{
 			ret = TypeTable.getType("boolean");
-		}catch (SemanticError se){System.err.println("*** BUG2: DefTypeCheckingVisitor, LogicalBinaryOP visitor");} // will never get here
+		}catch (SemanticError se){System.err.println("*** BUG3: DefTypeCheckingVisitor, LogicalBinaryOP visitor");} // will never get here
 		
 		return ret;
 	}
