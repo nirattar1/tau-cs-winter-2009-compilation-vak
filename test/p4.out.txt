@@ -1,0 +1,52 @@
+Parsed C:\Users\Vadim\Documents\Studies\Compilation\PA3\p3.ic successfully!
+
+Global Symbol Table: p3.ic
+	Class: A
+	Class: B
+Children tables: A, B
+
+Class Symbol Table: A
+	Field: string str
+	Static method: f { -> int}
+Children tables: f
+
+Method Symbol Table: f
+	Local variable: int _ret
+Children tables: statement block in f, statement block in f
+
+Statement Block Symbol Table ( located in f )
+	Local variable: string boolThen
+Children tables: statement block in statement block in f
+
+Statement Block Symbol Table ( located in statement block in f )
+	Local variable: int aThen
+
+Statement Block Symbol Table ( located in f )
+	Local variable: string boolElse
+Children tables: statement block in statement block in f
+
+Statement Block Symbol Table ( located in statement block in f )
+	Local variable: int aElse
+
+Class Symbol Table: B
+	Static method: main {string[] -> void}
+Children tables: main
+
+Method Symbol Table: main
+	Parameter: string[] arg
+	Local variable: void _ret
+
+
+Type Table: p3.ic
+	1: Primitive type: int
+	4: Primitive type: string
+	5: Primitive type: void
+	2: Primitive type: boolean
+	3: Primitive type: null
+	6: Class: A
+	7: Class: B
+	9: Array type: string[]
+	10: Method type: {string[] -> void}
+	8: Method type: { -> int}
+
+Passed type-checking

@@ -1,0 +1,51 @@
+Parsed C:\Users\Vadim\Documents\Studies\Compilation\PA3\p7.ic successfully!
+
+Global Symbol Table: p7.ic
+	Class: A
+	Class: C
+Children tables: A, C
+
+Class Symbol Table: A
+	Field: string str
+	Static method: f {int, boolean -> int}
+Children tables: f
+
+Method Symbol Table: f
+	Parameter: boolean booly
+	Parameter: int x
+	Local variable: int _ret
+	Local variable: int bla
+Children tables: statement block in f, statement block in f
+
+Statement Block Symbol Table ( located in f )
+	Local variable: int x
+
+Statement Block Symbol Table ( located in f )
+	Local variable: string str
+
+Class Symbol Table: C
+	Static method: main {string[] -> void}
+Children tables: main
+
+Method Symbol Table: main
+	Parameter: string[] arg
+	Local variable: string[][] sA
+	Local variable: boolean booly
+	Local variable: void _ret
+	Local variable: int a
+
+
+Type Table: p7.ic
+	1: Primitive type: int
+	4: Primitive type: string
+	5: Primitive type: void
+	2: Primitive type: boolean
+	3: Primitive type: null
+	6: Class: A
+	7: Class: C
+	11: Array type: string[][]
+	9: Array type: string[]
+	10: Method type: {string[] -> void}
+	8: Method type: {int, boolean -> int}
+
+Passed type-checking
