@@ -700,6 +700,13 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		if (location.isExternal()){ // field location is not null
 			location.getLocation().setEnclosingScope(location.getEnclosingScope());
 			if (location.getLocation().accept(this) == null) return null;
+		}else try{
+			// check that the location is a previously defined variable
+			((BlockSymbolTable) location.getEnclosingScope()).getVarSymbolRec(location.getName());
+		} catch (SemanticError se){
+			se.setLine(location.getLine());
+			System.err.println(se);
+			return null;
 		}
 		
 		return true;
