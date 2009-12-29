@@ -105,7 +105,7 @@ public class MethodSymbolTable extends BlockSymbolTable {
 		for(VarSymbol vs: varEntries.values()){
 			if (vs.getKind() == "PARAM"){ // parameter case
 				pListStr += "\n\tParameter: "+vs.getType().getName()+" "+vs.getName();
-			} else { // local variable case
+			} else if (vs.getKind() != "RET_VAR"){ // local variable case
 				lvListStr += "\n\tLocal variable: "+vs.getType().getName()+" "+vs.getName();
 			}
 		}
