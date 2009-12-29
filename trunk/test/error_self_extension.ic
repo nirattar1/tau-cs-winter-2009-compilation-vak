@@ -37,7 +37,7 @@ class B extends A {
     }
 }
 
-class C extend C{
+class C extends C{
   static void main(string[] args) {
     A[][] a;
   }
