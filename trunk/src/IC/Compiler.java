@@ -1,5 +1,5 @@
 package IC;
-// Temp comment
+
 import java.io.*;
 import IC.Parser.*;
 import IC.AST.*;
