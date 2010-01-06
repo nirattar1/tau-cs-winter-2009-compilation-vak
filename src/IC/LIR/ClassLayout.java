@@ -20,8 +20,19 @@ public class ClassLayout {
 	 * @param icClass
 	 */
 	public ClassLayout(ICClass icClass){
-		this.icClass = icClass;
+		
 	}
+	
+	@SuppressWarnings("unchecked")
+	public ClassLayout (ICClass icClass, ClassLayout superLayout){
+		this(icClass);
+		
+		methodToOffset = (HashMap<Method, Integer>)((HashMap<Method, Integer>)superLayout.getMethodToOffsetMap()).clone();
+		fieldToOffset = (HashMap<Field, Integer>)((HashMap<Field, Integer>)superLayout.getFieldToOffsetMap()).clone();
+		
+		
+	}
+	
 	
 	//////////////
 	//	getters	//
