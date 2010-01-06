@@ -2,133 +2,136 @@ package IC.LIR;
 
 import IC.AST.*;
 
-public class TranslatePropagatingVisitor implements PropagatingVisitor<DownType, UpType>{
+/**
+ * Translating visitor to LIR
+ */
+public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, String>{
 
-	public UpType visit(Program program, DownType d){
-		
+	public String visit(Program program, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(ICClass icClass, DownType d){
-		
+	public String visit(ICClass icClass, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(Field field, DownType d){
-		
+	public String visit(Field field, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(VirtualMethod method, DownType d){
-		
+	public String visit(VirtualMethod method, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(StaticMethod method, DownType d){
-		
+	public String visit(StaticMethod method, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(LibraryMethod method, DownType d){
-		
+	public String visit(LibraryMethod method, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(Formal formal, DownType d){
-		
+	public String visit(Formal formal, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(PrimitiveType type, DownType d){
-		
+	public String visit(PrimitiveType type, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(UserType type, DownType d){
-		
+	public String visit(UserType type, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(Assignment assignment, DownType d){
-		
+	public String visit(Assignment assignment, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(CallStatement callStatement, DownType d){
-		
+	public String visit(CallStatement callStatement, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(Return returnStatement, DownType d){
-		
+	public String visit(Return returnStatement, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(If ifStatement, DownType d){
-		
+	public String visit(If ifStatement, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(While whileStatement, DownType d){
-		
+	public String visit(While whileStatement, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(Break breakStatement, DownType d){
-		
+	public String visit(Break breakStatement, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(Continue continueStatement, DownType d){
-		
+	public String visit(Continue continueStatement, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(StatementsBlock statementsBlock, DownType d){
-		
+	public String visit(StatementsBlock statementsBlock, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(LocalVariable localVariable, DownType d){
-		
+	public String visit(LocalVariable localVariable, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(VariableLocation location, DownType d){
-		
+	public String visit(VariableLocation location, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(ArrayLocation location, DownType d){
-		
+	public String visit(ArrayLocation location, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(StaticCall call, DownType d){
-		
+	public String visit(StaticCall call, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(VirtualCall call, DownType d){
-		
+	public String visit(VirtualCall call, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(This thisExpression, DownType d){
-		
+	public String visit(This thisExpression, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(NewClass newClass, DownType d){
-		
+	public String visit(NewClass newClass, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(NewArray newArray, DownType d){
-		
+	public String visit(NewArray newArray, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(Length length, DownType d){
-		
+	public String visit(Length length, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(MathBinaryOp binaryOp, DownType d){
-		
+	public String visit(MathBinaryOp binaryOp, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(LogicalBinaryOp binaryOp, DownType d){
-		
+	public String visit(LogicalBinaryOp binaryOp, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(MathUnaryOp unaryOp, DownType d){
-		
+	public String visit(MathUnaryOp unaryOp, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(LogicalUnaryOp unaryOp, DownType d){
-		
+	public String visit(LogicalUnaryOp unaryOp, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(Literal literal, DownType d){
-		
+	public String visit(Literal literal, Integer d){
+		return ""; //TODO update
 	}
 
-	public UpType visit(ExpressionBlock expressionBlock, DownType d){
-		
+	public String visit(ExpressionBlock expressionBlock, Integer d){
+		return ""; //TODO update
 	}
 }
