@@ -1,5 +1,7 @@
 package IC.AST;
 
+import IC.LIR.PropagatingVisitor;
+
 /**
  * Local variable declaration statement AST node.
  * 
@@ -15,6 +17,10 @@ public class LocalVariable extends Statement {
 
 	public Object accept(Visitor visitor) {
 		return visitor.visit(this);
+	}
+	
+	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+		return visitor.visit(this, downInt);
 	}
 	
 	/**

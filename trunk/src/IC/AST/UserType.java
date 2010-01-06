@@ -1,5 +1,7 @@
 package IC.AST;
 
+import IC.LIR.PropagatingVisitor;
+
 /**
  * User-defined data type AST node.
  * 
@@ -11,6 +13,10 @@ public class UserType extends Type {
 
 	public Object accept(Visitor visitor) {
 		return visitor.visit(this);
+	}
+	
+	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+		return visitor.visit(this, downInt);
 	}
 
 	/**

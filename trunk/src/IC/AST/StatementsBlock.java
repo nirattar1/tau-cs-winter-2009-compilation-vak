@@ -2,6 +2,8 @@ package IC.AST;
 
 import java.util.List;
 
+import IC.LIR.PropagatingVisitor;
+
 /**
  * Statements block AST node.
  * 
@@ -13,6 +15,10 @@ public class StatementsBlock extends Statement {
 
 	public Object accept(Visitor visitor) {
 		return visitor.visit(this);
+	}
+	
+	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+		return visitor.visit(this, downInt);
 	}
 
 	/**
