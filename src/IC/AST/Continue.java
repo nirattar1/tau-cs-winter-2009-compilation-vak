@@ -1,5 +1,7 @@
 package IC.AST;
 
+import IC.LIR.PropagatingVisitor;
+
 /**
  * Continue statement AST node.
  * 
@@ -9,6 +11,10 @@ public class Continue extends Statement {
 
 	public Object accept(Visitor visitor) {
 		return visitor.visit(this);
+	}
+	
+	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+		return visitor.visit(this, downInt);
 	}
 
 	/**

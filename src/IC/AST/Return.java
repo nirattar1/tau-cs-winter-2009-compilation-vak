@@ -1,5 +1,7 @@
 package IC.AST;
 
+import IC.LIR.PropagatingVisitor;
+
 /**
  * Return statement AST node.
  * 
@@ -13,6 +15,10 @@ public class Return extends Statement {
 		return visitor.visit(this);
 	}
 
+	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+		return visitor.visit(this, downInt);
+	}
+	
 	/**
 	 * Constructs a new return statement node, with no return value.
 	 * 

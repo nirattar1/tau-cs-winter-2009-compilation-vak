@@ -1,6 +1,7 @@
 package IC.AST;
 
 import IC.BinaryOps;
+import IC.LIR.PropagatingVisitor;
 
 /**
  * Mathematical binary operation AST node.
@@ -11,6 +12,10 @@ public class MathBinaryOp extends BinaryOp {
 
 	public Object accept(Visitor visitor) {
 		return visitor.visit(this);
+	}
+	
+	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+		return visitor.visit(this, downInt);
 	}
 
 	/**

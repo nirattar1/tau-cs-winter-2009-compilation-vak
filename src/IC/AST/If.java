@@ -1,5 +1,7 @@
 package IC.AST;
 
+import IC.LIR.PropagatingVisitor;
+
 /**
  * If statement AST node.
  * 
@@ -17,6 +19,10 @@ public class If extends Statement {
 		return visitor.visit(this);
 	}
 
+	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+		return visitor.visit(this, downInt);
+	}
+	
 	/**
 	 * Constructs an If statement node.
 	 * 

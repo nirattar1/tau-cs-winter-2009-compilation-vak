@@ -1,5 +1,6 @@
 package IC.AST;
 
+import IC.LIR.PropagatingVisitor;
 import IC.SymbolTable.*;
 
 /**
@@ -22,6 +23,15 @@ public abstract class ASTNode {
 	 * @return A value propagated by the visitor.
 	 */
 	public abstract Object accept(Visitor visitor);
+	
+	/**
+	 * Double dispatch method, to allow a propagating visitor to visit a specific subcalss
+	 * used by IC.LIR package
+	 * @param visitor
+	 * @param downInt
+	 * @return
+	 */
+	public abstract String accept(PropagatingVisitor<Integer, String> visitor, Integer downInt);
 	
 	/**
 	 * Constructs an AST node corresponding to a line number in the original
