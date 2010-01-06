@@ -19,7 +19,18 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	// main method string representation
 	private String mainMethod = "";
 	
-	
+	/**
+	 * Program ASTNode propagating visitor:
+	 * - recursive calls to all classes in program
+	 * - returns the LIR representation of the IC program ordered by:
+	 * 		- string literals
+	 * 		- class dispatch tables
+	 * 		- methods
+	 * 		- main method
+	 * @param program
+	 * @param d
+	 * @return
+	 */
 	public String visit(Program program, Integer d){
 		// visit all classes recursively
 		for(ICClass c: program.getClasses()){
@@ -56,7 +67,21 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		return lirBuffer;
 	}
 
+	/**
+	 * Program ASTNode propagating visitor:
+	 * - recursive calls to all methods in the class //TODO update documentation
+	 * - returns 
+	 * @param icClass
+	 * @param d
+	 * @return
+	 */
 	public String visit(ICClass icClass, Integer d){
+		// create class layout
+		ClassLayout classLayout = new ClassLayout(icClass);
+		// update methods
+		
+		//TODO
+		
 		return ""; //TODO update
 	}
 
