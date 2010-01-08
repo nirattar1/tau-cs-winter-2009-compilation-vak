@@ -164,22 +164,36 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		return "";
 	}
 
+	/**
+	 * LibraryMethod propagating visitor:
+	 * does nothing since its LIR implementation is provided externally
+	 */
 	public String visit(LibraryMethod method, Integer d){
-		return ""; //TODO update
+		return "";
 	}
 
+	/**
+	 * Formal propagating visitor: never called
+	 */
 	public String visit(Formal formal, Integer d){
-		return ""; //TODO update
+		return "";
 	}
 
+	/**
+	 * PrimitiveType propagating visitor: never called
+	 */
 	public String visit(PrimitiveType type, Integer d){
-		return ""; //TODO update
+		return "";
 	}
 
+	/**
+	 * UserType propagating visitor: never called
+	 */
 	public String visit(UserType type, Integer d){
-		return ""; //TODO update
+		return "";
 	}
 
+	
 	public String visit(Assignment assignment, Integer d){
 		return ""; //TODO update
 	}
