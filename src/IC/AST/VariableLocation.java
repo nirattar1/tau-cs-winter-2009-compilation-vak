@@ -1,6 +1,6 @@
 package IC.AST;
 
-import IC.LIR.PropagatingVisitor;
+import IC.LIR.*;
 
 /**
  * Variable reference AST node.
@@ -17,7 +17,7 @@ public class VariableLocation extends Location {
 		return visitor.visit(this);
 	}
 	
-	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+	public LIRUpType accept(PropagatingVisitor<Integer,LIRUpType> visitor, Integer downInt){
 		return visitor.visit(this, downInt);
 	}
 
