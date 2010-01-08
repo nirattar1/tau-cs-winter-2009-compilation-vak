@@ -9,7 +9,8 @@ import IC.AST.*;
  *
  */
 public class ClassSymbol extends Symbol {
-	
+	private ICClass icClass;
+
 	/**
 	 * constructor for class symbol
 	 * @param c - an ICClass ASTnode
@@ -20,6 +21,11 @@ public class ClassSymbol extends Symbol {
 		super(c.getName());
 		TypeTable.addClassType(c);
 		this.type = TypeTable.getClassType(this.name);
+		this.icClass = c;
+	}
+	
+	public ICClass getIcClass() {
+		return icClass;
 	}
 	
 	public String getKind(){
