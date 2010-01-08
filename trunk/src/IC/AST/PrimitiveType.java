@@ -1,7 +1,8 @@
 package IC.AST;
 
 import IC.DataTypes;
-import IC.LIR.PropagatingVisitor;
+
+import IC.LIR.*;
 
 /**
  * Primitive data type AST node.
@@ -16,7 +17,7 @@ public class PrimitiveType extends Type {
 		return visitor.visit(this);
 	}
 
-	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+	public LIRUpType accept(PropagatingVisitor<Integer,LIRUpType> visitor, Integer downInt){
 		return visitor.visit(this, downInt);
 	}
 	

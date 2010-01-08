@@ -1,7 +1,8 @@
 package IC.AST;
 
 import IC.LiteralTypes;
-import IC.LIR.PropagatingVisitor;
+
+import IC.LIR.*;
 
 /**
  * Literal value AST node.
@@ -18,7 +19,7 @@ public class Literal extends Expression {
 		return visitor.visit(this);
 	}
 
-	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+	public LIRUpType accept(PropagatingVisitor<Integer,LIRUpType> visitor, Integer downInt){
 		return visitor.visit(this, downInt);
 	}
 	

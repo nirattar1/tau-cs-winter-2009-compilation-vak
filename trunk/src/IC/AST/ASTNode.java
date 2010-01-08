@@ -1,6 +1,6 @@
 package IC.AST;
 
-import IC.LIR.PropagatingVisitor;
+import IC.LIR.*;
 import IC.SymbolTable.*;
 
 /**
@@ -11,6 +11,20 @@ import IC.SymbolTable.*;
 public abstract class ASTNode {
 
 	private int line;
+	
+	/**
+	 * will hold the number of registers required to store the value of the ASTNode
+	 * (e.g. 2 registers for array location)
+	 */
+	private int requiredRegs;
+
+	public int getRequiredRegs() {
+		return requiredRegs;
+	}
+
+	public void setRequiredRegs(int requiredRegs) {
+		this.requiredRegs = requiredRegs;
+	}
 
 	/** reference to symbol table of enclosing scope **/
 	  private SymbolTable enclosingScope;
@@ -31,7 +45,7 @@ public abstract class ASTNode {
 	 * @param downInt
 	 * @return
 	 */
-	public abstract String accept(PropagatingVisitor<Integer, String> visitor, Integer downInt);
+	public abstract LIRUpType accept(PropagatingVisitor<Integer, LIRUpType> visitor, Integer downInt);
 	
 	/**
 	 * Constructs an AST node corresponding to a line number in the original

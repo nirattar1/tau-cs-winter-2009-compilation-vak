@@ -1,8 +1,7 @@
 package IC.AST;
 
 import java.util.List;
-
-import IC.LIR.PropagatingVisitor;
+import IC.LIR.*;
 
 /**
  * Class declaration AST node.
@@ -23,7 +22,7 @@ public class ICClass extends ASTNode {
 		return visitor.visit(this);
 	}
 	
-	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+	public LIRUpType accept(PropagatingVisitor<Integer,LIRUpType> visitor, Integer downInt){
 		return visitor.visit(this, downInt);
 	}
 

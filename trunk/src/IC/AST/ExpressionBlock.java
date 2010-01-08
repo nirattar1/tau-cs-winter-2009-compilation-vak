@@ -1,6 +1,6 @@
 package IC.AST;
 
-import IC.LIR.PropagatingVisitor;
+import IC.LIR.*;
 
 /**
  * AST node for expression in parentheses.
@@ -15,7 +15,7 @@ public class ExpressionBlock extends Expression {
 		return visitor.visit(this);
 	}
 
-	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+	public LIRUpType accept(PropagatingVisitor<Integer,LIRUpType> visitor, Integer downInt){
 		return visitor.visit(this, downInt);
 	}
 	

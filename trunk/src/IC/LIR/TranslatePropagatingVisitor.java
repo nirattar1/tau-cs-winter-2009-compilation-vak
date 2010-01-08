@@ -1,14 +1,14 @@
 package IC.LIR;
 
 import IC.AST.*;
-import IC.SymbolTable.ClassSymbolTable;
-
+import IC.SymbolTable.*;
+import IC.LIR.LIRFlagEnum;
 import java.util.*;
 
 /**
  * Translating visitor to LIR
  */
-public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, String>{
+public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, LIRUpType>{
 
 	// string literals counter
 	private int stringLiteralsCounter = 0;
@@ -35,7 +35,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @param d
 	 * @return
 	 */
-	public String visit(Program program, Integer d){
+	public LIRUpType visit(Program program, Integer d){
 		// visit all classes recursively
 		for(ICClass c: program.getClasses()){
 			c.accept(this, 0);
@@ -68,7 +68,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		lirBuffer += "# main method\n";
 		lirBuffer += this.mainMethod;
 		
-		return lirBuffer;
+		return new LIRUpType(lirBuffer, LIRFlagEnum.EXPLICIT);
 	}
 
 	/**
@@ -79,7 +79,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @param d
 	 * @return
 	 */
-	public String visit(ICClass icClass, Integer d){
+	public LIRUpType visit(ICClass icClass, Integer d){
 		// create class layout
 		ClassLayout classLayout;
 		if (icClass.hasSuperClass()){
@@ -101,14 +101,14 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 
 		// fields: no need for recursive calls
 		
-		return "";
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT);
 	}
 
 	/**
 	 * Field propagating visitor: never called
 	 */
-	public String visit(Field field, Integer d){
-		return "";
+	public LIRUpType visit(Field field, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT);
 	}
 
 	/**
@@ -118,9 +118,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @param d
 	 * @return
 	 */
-	public String visit(VirtualMethod method, Integer d){
+	public LIRUpType visit(VirtualMethod method, Integer d){
 		methodVisitHelper(method, d);
-		return "";
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT);
 	}
 
 	/**
@@ -130,9 +130,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @param d
 	 * @return
 	 */
-	public String visit(StaticMethod method, Integer d){
+	public LIRUpType visit(StaticMethod method, Integer d){
 		methodVisitHelper(method, d);
-		return "";
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT);
 	}
 	
 	/**
@@ -143,7 +143,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @param d
 	 * @return
 	 */
-	public String methodVisitHelper(Method method, Integer d){
+	public LIRUpType methodVisitHelper(Method method, Integer d){
 		String methodLIRCode = "";
 		
 		// create method label
@@ -161,129 +161,161 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		// update methods list
 		methods.add(methodLIRCode);
 		
-		return "";
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT);
 	}
 
 	/**
 	 * LibraryMethod propagating visitor:
 	 * does nothing since its LIR implementation is provided externally
 	 */
-	public String visit(LibraryMethod method, Integer d){
-		return "";
+	public LIRUpType visit(LibraryMethod method, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT);
 	}
 
 	/**
 	 * Formal propagating visitor: never called
 	 */
-	public String visit(Formal formal, Integer d){
-		return "";
+	public LIRUpType visit(Formal formal, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT);
 	}
 
 	/**
 	 * PrimitiveType propagating visitor: never called
 	 */
-	public String visit(PrimitiveType type, Integer d){
-		return "";
+	public LIRUpType visit(PrimitiveType type, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT);
 	}
 
 	/**
 	 * UserType propagating visitor: never called
 	 */
-	public String visit(UserType type, Integer d){
-		return "";
+	public LIRUpType visit(UserType type, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT);
 	}
 
-	
-	public String visit(Assignment assignment, Integer d){
-		return ""; //TODO update
+	/**
+	 * Assignment propagating visitor:
+	 * 
+	 */
+	public LIRUpType visit(Assignment assignment, Integer d){
+		String tr = "";
+		
+		// translate variable
+		LIRUpType var = assignment.getVariable().accept(this, d);
+		
+		// translate assignment
+		int assign_d = d + assignment.getVariable().getRequiredRegs();
+		LIRUpType assign = assignment.getAssignment().accept(this, assign_d);
+		
+		// insert assignment and variable LIR code
+		tr += assign.getLIRCode()+var.getLIRCode();
+		
+		// handle all variable cases
+		switch (var.getLIRInstType()){
+		case LOC_VAR_LOCATION:
+			// doesn't use any registers
+			tr += "Move R"+assign_d+","+((VariableLocation)assignment.getVariable()).getName();
+			break;
+		case EXT_VAR_LOCATION:
+			// uses one register
+			String varOffset = ((BlockSymbolTable) assignment.getVariable().getEnclosingScope()).getVarSymbolRec()
+			tr += "MoveField R"+assign_d+",R"+d+"."+;
+			break;
+		case ARR_LOCATION:
+			break;
+		default:
+			System.err.println("*** BUG: TranslatePropagatingVisitor Assignment: unhandled LIR instruction type");
+		}
+		
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(CallStatement callStatement, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(CallStatement callStatement, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(Return returnStatement, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(Return returnStatement, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(If ifStatement, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(If ifStatement, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(While whileStatement, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(While whileStatement, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(Break breakStatement, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(Break breakStatement, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(Continue continueStatement, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(Continue continueStatement, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(StatementsBlock statementsBlock, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(StatementsBlock statementsBlock, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(LocalVariable localVariable, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(LocalVariable localVariable, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(VariableLocation location, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(VariableLocation location, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(ArrayLocation location, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(ArrayLocation location, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(StaticCall call, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(StaticCall call, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(VirtualCall call, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(VirtualCall call, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(This thisExpression, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(This thisExpression, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(NewClass newClass, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(NewClass newClass, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(NewArray newArray, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(NewArray newArray, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(Length length, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(Length length, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(MathBinaryOp binaryOp, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(MathBinaryOp binaryOp, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(LogicalBinaryOp binaryOp, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(LogicalBinaryOp binaryOp, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(MathUnaryOp unaryOp, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(MathUnaryOp unaryOp, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(LogicalUnaryOp unaryOp, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(LogicalUnaryOp unaryOp, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(Literal literal, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(Literal literal, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 
-	public String visit(ExpressionBlock expressionBlock, Integer d){
-		return ""; //TODO update
+	public LIRUpType visit(ExpressionBlock expressionBlock, Integer d){
+		return new LIRUpType("", LIRFlagEnum.EXPLICIT); //TODO update
 	}
 	
 	// getters and setters

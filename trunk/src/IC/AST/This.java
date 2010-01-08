@@ -1,6 +1,6 @@
 package IC.AST;
 
-import IC.LIR.PropagatingVisitor;
+import IC.LIR.*;
 
 /**
  * 'This' expression AST node.
@@ -13,7 +13,7 @@ public class This extends Expression {
 		return visitor.visit(this);
 	}
 
-	public String accept(PropagatingVisitor<Integer,String> visitor, Integer downInt){
+	public LIRUpType accept(PropagatingVisitor<Integer,LIRUpType> visitor, Integer downInt){
 		return visitor.visit(this, downInt);
 	}
 	
