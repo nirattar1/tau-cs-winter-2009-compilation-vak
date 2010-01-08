@@ -16,7 +16,7 @@ public class ClassLayout {
 	private Map<Method,Integer> methodToOffset = new HashMap<Method,Integer>();
 	private Map<Field,Integer> fieldToOffset = new HashMap<Field,Integer>();
 	private int methodCounter = 0;
-	private int fieldCounter = 0;
+	private int fieldCounter = 1;
 	
 	/**
 	 * constructor for class layout
