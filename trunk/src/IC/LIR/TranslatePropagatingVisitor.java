@@ -2,6 +2,7 @@ package IC.LIR;
 
 import IC.AST.*;
 import IC.SymbolTable.*;
+import IC.TypeTable.*;
 import IC.LIR.LIRFlagEnum;
 import java.util.*;
 
@@ -10,6 +11,13 @@ import java.util.*;
  */
 public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, LIRUpType>{
 
+	private static GlobalSymbolTable global;
+	private static String currentClassName;
+	
+	public TranslatePropagatingVisitor(GlobalSymbolTable global){
+		TranslatePropagatingVisitor.global = global;
+	}
+	
 	// string literals counter
 	private int stringLiteralsCounter = 0;
 	// string literals map, each element literal string is mapped to the format 'str<i>'
@@ -93,6 +101,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		// insert class dispatch table representation
 		classDispatchTable.add(classLayout.getDispatchTable());
 
+		// set current class name
+		currentClassName = icClass.getName();
+		
 		// recursive calls to methods
 		for(Method m: icClass.getMethods()){
 			m.accept(this,0);
@@ -235,8 +246,29 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	}
 
 	/**
+	 * returns the ASTNode Field for the given field name,
+	 * starting the search from the given ICClass.
+	 * returns null if didn't find it (not supposed to happen).
+	 * @param icClass
+	 * @param fieldName
+	 * @return
+	 */
+	public Field getFieldASTNodeRec(ICClass icClass, String fieldName){
+		for(Field f: icClass.getFields()){
+			if (f.getName().equals(fieldName))
+				return f;
+		}
+		if (icClass.hasSuperClass()){
+			return getFieldASTNodeRec(global.getClass(icClass.getSuperClassName()).getIcClass(), fieldName);
+		} else
+			System.err.println("*** BUG: TranslatePropagatingVisitor getFieldASTNodeRec bug");
+		return null;
+	}
+	
+	/**
 	 * VariableLocation propagating visitor:
-	 * 
+	 * - translate recursively the location
+	 * - concatenate the translations to the LIR location update instruction
 	 */
 	public LIRUpType visit(VariableLocation location, Integer d){
 		String tr = "";
@@ -244,18 +276,96 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		if (location.isExternal()){
 			// translate the location
 			LIRUpType loc = location.getLocation().accept(this, d);
+			// add code to translation
+			tr += loc.getLIRCode();
 			
+			// get the ClassLayout for the location
+			IC.TypeTable.Type locationClassType = 
+				(IC.TypeTable.Type)location.getLocation().accept(new IC.Visitors.DefTypeSemanticChecker(global));
+			ClassLayout locationClassLayout = classLayouts.get(locationClassType.getName());
+			
+			// get the field offset for the variable
+			Field f = getFieldASTNodeRec(locationClassLayout.getICClass(), location.getName());
+			
+			// get the field offset
+			int fieldOffset = locationClassLayout.getFieldOffset(f);
+			
+			// translate this step
+			switch(loc.getLIRInstType()){
+			case LOC_VAR_LOCATION:
+				tr += "Move ";
+				break;
+			case EXT_VAR_LOCATION:
+				tr += "MoveField ";
+				break;
+			case ARR_LOCATION:
+				tr += "MoveArray ";
+				break;
+			default:
+				System.err.println("*** BUG: TranslatePropagatingVisitor VariableLocation: unhandled LIR instruction type");	
+			}
+			String locReg = "R"+d;
+			tr += loc.getTargetRegister()+","+locReg+"\n";
+			
+			return new LIRUpType(tr, LIRFlagEnum.EXT_VAR_LOCATION, locReg+"."+fieldOffset);
 		}else{
 			// translate only the variable name
 			return new LIRUpType("",LIRFlagEnum.LOC_VAR_LOCATION,location.getName());
 		}
-		
-		
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
 	}
 
+	/**
+	 * ArrayLocation propagating visitor:
+	 * - translate recursively the array and the index
+	 * - concatenate the translations to the LIR array location update instruction
+	 */
 	public LIRUpType visit(ArrayLocation location, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		
+		// translate array
+		LIRUpType array = location.getArray().accept(this, d);
+		tr += array.getLIRCode();
+		
+		// move result to a single register
+		switch (array.getLIRInstType()){
+		case ARR_LOCATION:
+			tr += "MoveArray ";
+			break;
+		case LOC_VAR_LOCATION:
+			tr += "Move ";
+			break;
+		case EXT_VAR_LOCATION:
+			tr += "MoveField ";
+			break;
+		default:
+			System.err.println("*** BUG: TranslatePropagatingVisitor ArrayLocation: unhandled LIR instruction type");
+		}
+		tr += array.getTargetRegister()+",R"+d+"\n";
+		
+		// translate index
+		LIRUpType index = location.getIndex().accept(this, d+1);
+		tr += index.getLIRCode();
+		
+		// move result to a single register
+		switch (index.getLIRInstType()){
+		case IMMEDIATE:
+			tr += "Move ";
+			break;
+		case LOC_VAR_LOCATION:
+			tr += "Move ";
+			break;
+		case EXT_VAR_LOCATION:
+			tr += "MoveField ";
+			break;
+		case ARR_LOCATION:
+			tr += "MoveArray ";
+			break;
+		default:
+			System.err.println("*** BUG: TranslatePropagatingVisitor ArrayLocation: unhandled LIR instruction type");
+		}
+		tr += index.getTargetRegister()+",R"+(d+1)+"\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.ARR_LOCATION,"R"+d+"[R"+(d+1)+"]");
 	}
 
 	public LIRUpType visit(CallStatement callStatement, Integer d){
