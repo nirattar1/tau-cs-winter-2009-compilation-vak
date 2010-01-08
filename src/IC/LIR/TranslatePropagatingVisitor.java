@@ -1,6 +1,8 @@
 package IC.LIR;
 
 import IC.AST.*;
+import IC.SymbolTable.ClassSymbolTable;
+
 import java.util.*;
 
 /**
@@ -12,6 +14,8 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	private int stringLiteralsCounter = 0;
 	// string literals list, each element in the format: 'str<i>: "<string>"'
 	private List<String> stringLiterals = new ArrayList<String>();
+	// class layouts
+	private Map<String,ClassLayout> classLayouts = new HashMap<String,ClassLayout>();
 	// class dispatch tables, each element in the format: '_DV_<class name>: [<method1>,<method2>,...]'
 	private List<String> classDispatchTable = new ArrayList<String>();
 	// methods procedural code string representation
@@ -20,7 +24,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	private String mainMethod = "";
 	
 	/**
-	 * Program ASTNode propagating visitor:
+	 * Program propagating visitor:
 	 * - recursive calls to all classes in program
 	 * - returns the LIR representation of the IC program ordered by:
 	 * 		- string literals
@@ -68,33 +72,96 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	}
 
 	/**
-	 * Program ASTNode propagating visitor:
-	 * - recursive calls to all methods in the class //TODO update documentation
-	 * - returns 
+	 * ICClass propagating visitor:
+	 * - updates class dispatch tables
+	 * - recursive calls to all methods in the class
 	 * @param icClass
 	 * @param d
 	 * @return
 	 */
 	public String visit(ICClass icClass, Integer d){
 		// create class layout
-		ClassLayout classLayout = new ClassLayout(icClass);
-		// update methods
+		ClassLayout classLayout;
+		if (icClass.hasSuperClass()){
+			// already have super-class layout at this point
+			classLayout = new ClassLayout(icClass, classLayouts.get(icClass.getSuperClassName()));
+		} else {
+			classLayout = new ClassLayout(icClass);
+		}
+		// insert to classLayouts
+		classLayouts.put(icClass.getName(), classLayout);
+		// insert class dispatch table representation
+		classDispatchTable.add(classLayout.getDispatchTable());
+
+		// recursive calls to methods
+		for(Method m: icClass.getMethods()){
+			m.accept(this,0);
+			// each method will be responsible to insert its string rep. to the methods list
+		}
+
+		// fields: no need for recursive calls
 		
-		//TODO
-		
-		return ""; //TODO update
+		return "";
 	}
 
+	/**
+	 * Field propagating visitor: never called
+	 */
 	public String visit(Field field, Integer d){
-		return ""; //TODO update
+		return "";
 	}
 
+	/**
+	 * VirtualMethod propagating visitor:
+	 * see methodVisitHelper documentation
+	 * @param method
+	 * @param d
+	 * @return
+	 */
 	public String visit(VirtualMethod method, Integer d){
-		return ""; //TODO update
+		methodVisitHelper(method, d);
+		return "";
 	}
 
+	/**
+	 * StaticMethod propagating visitor:
+	 * see methodVisitHelper documentation
+	 * @param method
+	 * @param d
+	 * @return
+	 */
 	public String visit(StaticMethod method, Integer d){
-		return ""; //TODO update
+		methodVisitHelper(method, d);
+		return "";
+	}
+	
+	/**
+	 * Virtual / Static method visitor helper
+	 * - creates LIR representation for the method code and updates methods list
+	 * - includes recursive calls to all method's statements
+	 * @param method
+	 * @param d
+	 * @return
+	 */
+	public String methodVisitHelper(Method method, Integer d){
+		String methodLIRCode = "";
+		
+		// create method label
+		String methodLabel = "_";
+		methodLabel += ((ClassSymbolTable) method.getEnclosingScope()).getMySymbol().getName();
+		methodLabel += "_"+method.getName();
+		
+		methodLIRCode += methodLabel+":\n";
+		
+		// insert method's code recursively
+		for (Statement s: method.getStatements()){
+			methodLIRCode += s.accept(this,0);
+		}
+		
+		// update methods list
+		methods.add(methodLIRCode);
+		
+		return "";
 	}
 
 	public String visit(LibraryMethod method, Integer d){
