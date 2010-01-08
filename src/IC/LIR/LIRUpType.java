@@ -4,11 +4,13 @@ public class LIRUpType {
 
 	private String	LIRCode;
 	private LIRFlagEnum LIRInstType;
-	
-	public LIRUpType(String lIRCode, LIRFlagEnum astType) {
+	private String targetRegister;
+
+	public LIRUpType(String lIRCode, LIRFlagEnum astType, String targetRegister) {
 		super();
-		LIRCode = lIRCode;
+		this.LIRCode = lIRCode;
 		this.LIRInstType = astType;
+		this.targetRegister = targetRegister;
 	}
 
 	public String getLIRCode() {
@@ -17,5 +19,9 @@ public class LIRUpType {
 
 	public LIRFlagEnum getLIRInstType() {
 		return LIRInstType;
-	} 
+	}
+	
+	public String getTargetRegister() {
+		return targetRegister;
+	}
 }
