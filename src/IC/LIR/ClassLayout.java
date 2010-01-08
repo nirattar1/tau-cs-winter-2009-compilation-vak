@@ -174,9 +174,21 @@ public class ClassLayout {
 				}
 			}
 		}
-		
-		// chomp
 		dispatch = dispatch.substring(0, dispatch.length()-1)+"]\n";
+		
+		// get all fields and offsets as comments
+		String fieldsOffsets = "# fields offsets:\n";
+		for(int i = 0; i < fieldCounter; i++){
+			for (Field f: fieldToOffset.keySet()){
+				// if the offset is correct, insert field and its offset
+				if (fieldToOffset.get(f) == i){
+					fieldsOffsets += "# "+f.getName()+": ";
+					fieldsOffsets += i+"\n";
+					break;
+				}
+			}
+		}
+		dispatch += fieldsOffsets;
 		
 		return dispatch;
 	}
