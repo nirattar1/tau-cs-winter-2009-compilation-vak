@@ -3,12 +3,9 @@ package IC.LIR;
 import IC.BinaryOps;
 import IC.AST.*;
 import IC.SymbolTable.*;
-import IC.TypeTable.*;
 import IC.Visitors.DefTypeSemanticChecker;
 import IC.LIR.LIRFlagEnum;
 import java.util.*;
-
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane.MoveAction;
 
 /**
  * Translating visitor to LIR
@@ -16,8 +13,11 @@ import javax.swing.plaf.basic.BasicInternalFrameTitlePane.MoveAction;
 public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, LIRUpType>{
 
 	private static GlobalSymbolTable global;
-	private static String currentClassName;
 	
+	/**
+	 * constructor
+	 * @param global
+	 */
 	public TranslatePropagatingVisitor(GlobalSymbolTable global){
 		TranslatePropagatingVisitor.global = global;
 	}
@@ -108,9 +108,6 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		classLayouts.put(icClass.getName(), classLayout);
 		// insert class dispatch table representation
 		classDispatchTable.add(classLayout.getDispatchTable());
-
-		// set current class name
-		currentClassName = icClass.getName();
 		
 		// recursive calls to methods
 		for(Method m: icClass.getMethods()){
