@@ -22,6 +22,8 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		TranslatePropagatingVisitor.global = global;
 	}
 	
+	// current class
+	private String currClassName = "";
 	// string literals counter
 	private int stringLiteralsCounter = 0;
 	// string literals map, each element literal string is mapped to the format 'str<i>'
@@ -117,6 +119,8 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @return
 	 */
 	public LIRUpType visit(ICClass icClass, Integer d){
+		// set current class name
+		currClassName = icClass.getName();
 		
 		// recursive calls to methods
 		for(Method m: icClass.getMethods()){
@@ -379,6 +383,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		
 		// recursive call the condition expression
 		LIRUpType condExp = ifStatement.getCondition().accept(this, d);
+		tr += condExp.getLIRCode();
 		tr += getMoveCommand(condExp.getLIRInstType());
 		tr += condExp.getTargetRegister()+",R"+d+"\n";
 		
@@ -531,7 +536,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			tr += thisMethod.getFormals().get(i).getName()+"=R"+(d+i)+",";
 		}
 		// remove last comma
-		tr = tr.substring(0, tr.length()-1);
+		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
 		tr += "),R"+d+"\n";
 		
 		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
@@ -552,7 +557,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			tr += "R"+(i+d)+",";
 		}
 		// remove last comma
-		tr = tr.substring(0, tr.length()-1);
+		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
 		tr += "),R"+d+"\n";
 		
 		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
@@ -590,7 +595,8 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		
 		// call statement
 		tr += "VirtualCall R"+d+".";
-		String className = ((IC.TypeTable.ClassType) call.getLocation().accept(new DefTypeSemanticChecker(global))).getName();
+		String className = !call.isExternal() ? currClassName :
+			((IC.TypeTable.ClassType) call.getLocation().accept(new DefTypeSemanticChecker(global))).getName();
 		ClassLayout thisClassLayout = classLayouts.get(className);
 		Method thisMethod = thisClassLayout.getMethodFromName(call.getName());
 		int offset = thisClassLayout.getMethodOffset(thisMethod);
@@ -601,7 +607,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			tr += thisMethod.getFormals().get(i).getName()+"=R"+(d+i+1)+",";
 		}
 		// remove last comma
-		tr = tr.substring(0, tr.length()-1);
+		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
 		tr += "),R"+d+"\n";
 		
 		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
@@ -644,6 +650,8 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += size.getLIRCode();
 		tr += getMoveCommand(size.getLIRInstType());
 		tr += size.getTargetRegister()+",R"+d+"\n";
+		// multiply by 4
+		tr += "Mul 4,R"+d+"\n";
 		
 		// allocate memory
 		tr += "Library __allocateArray(R"+d+"),R"+d+"\n";
@@ -831,9 +839,10 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		
 		switch (literal.getType()){
 		case STRING:
-			if (!stringLiterals.containsKey(literal.getValue()))
-				stringLiterals.put(((String) literal.getValue()), "str"+(stringLiteralsCounter++));
-			litStr = stringLiterals.get(literal.getValue());
+			String strVal = ((String) literal.getValue()).replaceAll("\n", "\\\\n");
+			if (!stringLiterals.containsKey(strVal))
+				stringLiterals.put(strVal, "str"+(stringLiteralsCounter++));
+			litStr = stringLiterals.get(strVal);
 			break;
 		case INTEGER:
 			litStr = literal.getValue().toString();
