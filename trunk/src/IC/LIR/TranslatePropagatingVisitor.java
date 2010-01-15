@@ -600,15 +600,31 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * - return LIR instruction
 	 */
 	public LIRUpType visit(NewClass newClass, Integer d){
-		String tr = "";
+		ClassLayout thisClassLayout = classLayouts.get(newClass.getName());
+		String tr = "Library __allocateObject("+thisClassLayout.getAllocSize()+"),R"+d+"\n";
+		tr += "MoveField _DV_"+thisClassLayout.getClassName()+",R"+d+".0\n";
 		
-		
-		
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * NewArray propagating visitor:
+	 * - translate new expression
+	 * - return LIR instruction
+	 */
 	public LIRUpType visit(NewArray newArray, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		
+		// recursive call to size
+		LIRUpType size = newArray.getSize().accept(this, d);
+		tr += size.getLIRCode();
+		tr += getMoveCommand(size.getLIRInstType());
+		tr += size.getTargetRegister()+",R"+d+"\n";
+		
+		// allocate memory
+		tr += "Library __allocateArray(R"+d+"),R"+d+"\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
 	public LIRUpType visit(Length length, Integer d){
