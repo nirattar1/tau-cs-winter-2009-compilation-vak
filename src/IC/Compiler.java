@@ -1,6 +1,9 @@
 package IC;
 
 import java.io.*;
+
+import IC.LIR.LIRUpType;
+import IC.LIR.TranslatePropagatingVisitor;
 import IC.Parser.*;
 import IC.AST.*;
 import IC.SymbolTable.GlobalSymbolTable;
@@ -18,6 +21,7 @@ public class Compiler {
 	
 	/** 
 	 * Reads an IC-program, parses (builds an AST) and checks for lexical, syntactic and semantic errors
+	 * eventually parses translates to LIR code
 	 * optional library-file add, pretty-printing of the program's AST and printing of the Symbol and Type tables
 	 * @param args[0]: contains the input ic program file path
 	 * @param optional: -L<library_path> where library_path is the library-file path 
@@ -140,6 +144,29 @@ public class Compiler {
 		} else {
 			System.out.println("Passed type-checking");
 		}
+		
+		//////////////////////////////////
+		//	LIR code translation phase	//
+		//////////////////////////////////
+		
+		// build translating visitor
+		TranslatePropagatingVisitor translator = new TranslatePropagatingVisitor((GlobalSymbolTable)globalSymTab);
+		String tr = root.accept(translator, 0).getLIRCode();
+		
+		// print LIR translation to file
+		String lirFileName = args[0].substring(0,args[0].length()-2)+"lir";
+		try {
+			BufferedWriter buff = new BufferedWriter(new FileWriter(lirFileName));
+			buff.write(tr);
+			buff.flush();
+			buff.close();
+		} catch (IOException e) {
+			System.err.println("Failed writing to file: "+lirFileName);
+			e.printStackTrace();
+		}
+		System.out.println("LIR translation");
+		System.out.println("===============");
+		System.out.println(tr);
 	}
 	
 	/**
