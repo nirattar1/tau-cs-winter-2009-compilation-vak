@@ -541,14 +541,17 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * - concatenate the translations to the LIR virtual call statement instruction
 	 */
 	public LIRUpType visit(VirtualCall call, Integer d){
-		String tr = "";
+		String tr = "# virtual call location:\n";;
 		
 		// recursive call to call location
-		LIRUpType location = call.getLocation().accept(this, d);
-		tr += "# virtual call location:\n";
-		tr += location.getLIRCode();
-		tr += getMoveCommand(location.getLIRInstType());
-		tr += location.getTargetRegister()+",R"+d+"\n";
+		if (call.isExternal()){
+			LIRUpType location = call.getLocation().accept(this, d);
+			tr += location.getLIRCode();
+			tr += getMoveCommand(location.getLIRInstType());
+			tr += location.getTargetRegister()+",R"+d+"\n";
+		} else {
+			tr += "Move this,R"+d+"\n";
+		}
 		
 		// recursive call to all arguments
 		int i = d+1;
@@ -578,14 +581,29 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr = tr.substring(0, tr.length()-1);
 		tr += "),R"+d+"\n";
 		
-		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * This propagating visitor:
+	 * - translate this reference: get dispatch vector
+	 * - return translation
+	 */
 	public LIRUpType visit(This thisExpression, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "Move this,R"+d+"\n";
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * NewClass propagating visitor:
+	 * - translate new expression
+	 * - return LIR instruction
+	 */
 	public LIRUpType visit(NewClass newClass, Integer d){
+		String tr = "";
+		
+		
+		
 		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
 	}
 
