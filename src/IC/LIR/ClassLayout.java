@@ -222,7 +222,8 @@ public class ClassLayout {
 				}
 			}
 		}
-		dispatch = dispatch.substring(0, dispatch.length()-1)+"]\n";
+		if (dispatch.endsWith(",")) dispatch = dispatch.substring(0, dispatch.length()-1);
+		dispatch += "]\n";
 		
 		// get all fields and offsets as comments
 		String fieldsOffsets = "# fields offsets:\n";

@@ -15,7 +15,7 @@ import IC.BinaryOps;
 public class DefTypeSemanticChecker implements Visitor {
 	private IC.SymbolTable.GlobalSymbolTable global;
 	private boolean inStatic = false;
-	private boolean inLoop = false;
+	private int inLoop = 0;
 	
 	/**
 	 * constructor
@@ -252,12 +252,12 @@ public class DefTypeSemanticChecker implements Visitor {
 		} catch (SemanticError se){System.err.println("*** BUG: DefTypeCheckingVisitor, While visitor");} // will never get here
 		
 		// check operation recursively
-		inLoop = true;
+		inLoop++;
 		if (whileStatement.getOperation().accept(this) == null) {
-			inLoop = false;
+			inLoop--;
 			return null;
 		}
-		inLoop = false;
+		inLoop--;
 		
 		return true;
 	}
@@ -267,7 +267,7 @@ public class DefTypeSemanticChecker implements Visitor {
 	 * Break visitor: checks that in while loop
 	 */
 	public Object visit(Break breakStatement) {
-		if (!inLoop){
+		if (inLoop == 0){
 			System.err.println(new SemanticError("'break' statement not in loop",
 					breakStatement.getLine(),
 					"break"));
@@ -282,7 +282,7 @@ public class DefTypeSemanticChecker implements Visitor {
 	 * Continue visitor: checks that in while loop
 	 */
 	public Object visit(Continue continueStatement) {
-		if (!inLoop){
+		if (inLoop == 0){
 			System.err.println(new SemanticError("'continue' statement not in loop",
 					continueStatement.getLine(),
 					"continue"));
