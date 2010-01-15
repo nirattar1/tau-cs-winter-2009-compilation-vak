@@ -167,6 +167,14 @@ public class ClassLayout {
 		return nameToMethod.get(name);
 	}
 	
+	/**
+	 * getter for the number of bytes needed for allocation
+	 * @return
+	 */
+	public int getAllocSize(){
+		return 4*(fieldToOffset.size()+1);
+	}
+	
 	//////////////
 	//	adders	//
 	//////////////
