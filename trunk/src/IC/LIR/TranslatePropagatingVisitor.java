@@ -3,6 +3,7 @@ package IC.LIR;
 import IC.AST.*;
 import IC.SymbolTable.*;
 import IC.TypeTable.*;
+import IC.Visitors.DefTypeSemanticChecker;
 import IC.LIR.LIRFlagEnum;
 import java.util.*;
 
@@ -489,6 +490,11 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			i++;
 		}
 		
+		// check if the call is to a library (static) method
+		if (call.getClassName().equals("Library")){
+			return libraryCallVisit(tr,call,d);
+		}
+		
 		// call statement
 		ClassLayout thisClassLayout = classLayouts.get(call.getClassName());
 		Method thisMethod = thisClassLayout.getMethodFromName(call.getName());
@@ -505,11 +511,74 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr = tr.substring(0, tr.length()-1);
 		tr += "),R"+d+"\n";
 		
-		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
+	}
+	
+	/**
+	 * Visitor for LIBRARY static call
+	 * called by StaticCall visitor if the call is for a library method
+	 * @param call
+	 * @param d
+	 * @return
+	 */
+	public LIRUpType libraryCallVisit(String argsTr, StaticCall call, Integer d){
+		String tr = argsTr; 
+		tr += "Library __"+call.getName()+"(";
+		// iterate over values (registers)
+		for(int i = 0; i < call.getArguments().size(); i++){
+			tr += "R"+(i+d)+",";
+		}
+		// remove last comma
+		tr = tr.substring(0, tr.length()-1);
+		tr += "),R"+d+"\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * VirtualCall propagating visitor:
+	 * - translate recursively the list of arguments
+	 * - concatenate the translations to the LIR virtual call statement instruction
+	 */
 	public LIRUpType visit(VirtualCall call, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		
+		// recursive call to call location
+		LIRUpType location = call.getLocation().accept(this, d);
+		tr += "# virtual call location:\n";
+		tr += location.getLIRCode();
+		tr += getMoveCommand(location.getLIRInstType());
+		tr += location.getTargetRegister()+",R"+d+"\n";
+		
+		// recursive call to all arguments
+		int i = d+1;
+		for (Expression arg: call.getArguments()){
+			LIRUpType argExp = arg.accept(this, i);
+			tr += "# argument #"+(i-d-1)+":\n";
+			tr += argExp.getLIRCode();
+			tr += getMoveCommand(argExp.getLIRInstType());
+			tr += argExp.getTargetRegister()+",R"+i+"\n";
+			// increment registers count
+			i++;
+		}
+		
+		// call statement
+		tr += "VirtualCall R"+d+".";
+		String className = ((IC.TypeTable.ClassType) call.getLocation().accept(new DefTypeSemanticChecker(global))).getName();
+		ClassLayout thisClassLayout = classLayouts.get(className);
+		Method thisMethod = thisClassLayout.getMethodFromName(call.getName());
+		int offset = thisClassLayout.getMethodOffset(thisMethod);
+		
+		tr += offset+"(";
+		// insert <formal>=<argument register>
+		for(i = 0; i < call.getArguments().size(); i++){
+			tr += thisMethod.getFormals().get(i)+"=R"+(d+i+1)+",";
+		}
+		// remove last comma
+		tr = tr.substring(0, tr.length()-1);
+		tr += "),R"+d+"\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
 
 	public LIRUpType visit(This thisExpression, Integer d){
@@ -595,6 +664,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		this.mainMethod = mainMethod;
 	}
 	
+	// helpers
+	//////////
+	
 	/**
 	 * returns the correct move command for the given LIR flag enum
 	 * @param type
@@ -603,6 +675,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	private String getMoveCommand(LIRFlagEnum type){
 		switch(type){
 		case IMMEDIATE: return "Move ";
+		case REGISTER: return "Move ";
 		case LOC_VAR_LOCATION: return "Move ";
 		case EXT_VAR_LOCATION: return "MoveField ";
 		case ARR_LOCATION: return "MoveArray ";
