@@ -210,6 +210,9 @@ public class ClassLayout {
 		// insert methods' labels ordered by increasing offset
 		for(int i = 0; i < methodCounter; i++){
 			for (Method m: methodToOffset.keySet()){
+				// if this method is static, skip
+				if (m.isStatic()) continue;
+				
 				// if the offset is correct, insert method label
 				if (methodToOffset.get(m) == i){
 					dispatch += "_";

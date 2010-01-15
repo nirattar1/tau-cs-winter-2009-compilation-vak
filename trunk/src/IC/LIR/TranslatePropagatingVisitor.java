@@ -52,9 +52,30 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @return
 	 */
 	public LIRUpType visit(Program program, Integer d){
+		
+		for(ICClass c: program.getClasses()){
+			// skip library method
+			if (c.getName().equals("Library")) continue;
+			
+			// create class layout
+			ClassLayout classLayout;
+			if (c.hasSuperClass()){
+				// already have super-class layout at this point
+				classLayout = new ClassLayout(c, classLayouts.get(c.getSuperClassName()));
+			} else {
+				classLayout = new ClassLayout(c);
+			}
+			// insert to classLayouts
+			classLayouts.put(c.getName(), classLayout);
+			// insert class dispatch table representation
+			classDispatchTable.add(classLayout.getDispatchTable());
+
+		}
+		
 		// visit all classes recursively
 		for(ICClass c: program.getClasses()){
-			c.accept(this, 0);
+			if (!c.getName().equals("Library"))
+				c.accept(this, 0);
 		}
 		
 		// return LIR representation for the IC program
@@ -96,18 +117,6 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @return
 	 */
 	public LIRUpType visit(ICClass icClass, Integer d){
-		// create class layout
-		ClassLayout classLayout;
-		if (icClass.hasSuperClass()){
-			// already have super-class layout at this point
-			classLayout = new ClassLayout(icClass, classLayouts.get(icClass.getSuperClassName()));
-		} else {
-			classLayout = new ClassLayout(icClass);
-		}
-		// insert to classLayouts
-		classLayouts.put(icClass.getName(), classLayout);
-		// insert class dispatch table representation
-		classDispatchTable.add(classLayout.getDispatchTable());
 		
 		// recursive calls to methods
 		for(Method m: icClass.getMethods()){
@@ -135,7 +144,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @return
 	 */
 	public LIRUpType visit(VirtualMethod method, Integer d){
-		methodVisitHelper(method, d);
+		methodVisitHelper(method, d, false);
 		return new LIRUpType("", LIRFlagEnum.EXPLICIT,"");
 	}
 
@@ -147,7 +156,12 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @return
 	 */
 	public LIRUpType visit(StaticMethod method, Integer d){
-		methodVisitHelper(method, d);
+		// check if this method is the program's main method
+		boolean isMain = method.getName().equals("main") &&
+						 method.getType().getName().equals("void") &&
+						 method.getFormals().size() == 1 &&
+						 method.getFormals().get(0).getType().getFullName().equals("string[]");
+		methodVisitHelper(method, d, isMain);
 		return new LIRUpType("", LIRFlagEnum.EXPLICIT,"");
 	}
 	
@@ -159,28 +173,32 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * @param d
 	 * @return
 	 */
-	public LIRUpType methodVisitHelper(Method method, Integer d){
+	public LIRUpType methodVisitHelper(Method method, Integer d, boolean isMain){
 		String methodLIRCode = "";
 		
 		// create method label
 		String methodLabel = "_";
-		methodLabel += ((ClassSymbolTable) method.getEnclosingScope()).getMySymbol().getName();
+		methodLabel += isMain ? "ic" : ((ClassSymbolTable) method.getEnclosingScope()).getMySymbol().getName();
 		methodLabel += "_"+method.getName();
 		
 		methodLIRCode += methodLabel+":\n";
 		
 		// insert method's code recursively
 		for (Statement s: method.getStatements()){
-			methodLIRCode += s.accept(this,0);
+			methodLIRCode += s.accept(this,0).getLIRCode();
 		}
 		
-		// if method is void, concatenate a "return 9999"
-		if(method.getType().getName().equals("void")){
+		// if method is void (but not main), concatenate a "return 9999"
+		if(method.getType().getName().equals("void") && !isMain){
 			methodLIRCode += "Return 9999\n";
 		}
 		
-		// update methods list
-		methods.add(methodLIRCode);
+		// update methods list / main method
+		if (isMain){
+			mainMethod = methodLIRCode;
+		} else {
+			methods.add(methodLIRCode);
+		}
 		
 		return new LIRUpType("", LIRFlagEnum.EXPLICIT,"");
 	}
@@ -510,7 +528,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += "StaticCall "+methodName+"(";
 		// insert <formal>=<argument register>
 		for(i = 0; i < call.getArguments().size(); i++){
-			tr += thisMethod.getFormals().get(i)+"=R"+(d+i)+",";
+			tr += thisMethod.getFormals().get(i).getName()+"=R"+(d+i)+",";
 		}
 		// remove last comma
 		tr = tr.substring(0, tr.length()-1);
@@ -580,7 +598,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += offset+"(";
 		// insert <formal>=<argument register>
 		for(i = 0; i < call.getArguments().size(); i++){
-			tr += thisMethod.getFormals().get(i)+"=R"+(d+i+1)+",";
+			tr += thisMethod.getFormals().get(i).getName()+"=R"+(d+i+1)+",";
 		}
 		// remove last comma
 		tr = tr.substring(0, tr.length()-1);
@@ -605,6 +623,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * - return LIR code
 	 */
 	public LIRUpType visit(NewClass newClass, Integer d){
+		System.out.println(newClass.getName()+"\n\n");
 		ClassLayout thisClassLayout = classLayouts.get(newClass.getName());
 		String tr = "Library __allocateObject("+thisClassLayout.getAllocSize()+"),R"+d+"\n";
 		tr += "MoveField _DV_"+thisClassLayout.getClassName()+",R"+d+".0\n";
