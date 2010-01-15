@@ -1,0 +1,4 @@
+Optimizations TODO:
+===================
+- remove trivial moves ("Move R1,R1")
+- replace transitions "Move x,Ri  Move Ri,y" to "Move x,y"
