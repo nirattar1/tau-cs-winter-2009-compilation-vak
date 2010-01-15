@@ -225,21 +225,19 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	public LIRUpType visit(Assignment assignment, Integer d){
 		String tr = "";
 		
-		// translate variable
-		LIRUpType var = assignment.getVariable().accept(this, d);
-		String varReg = var.getTargetRegister();
-		
 		// translate assignment
-		int assign_d = d + assignment.getVariable().getRequiredRegs();
-		LIRUpType assign = assignment.getAssignment().accept(this, assign_d);
-		String assignReg = assign.getTargetRegister();
+		LIRUpType assign = assignment.getAssignment().accept(this, d);
+		tr += assign.getLIRCode();
+		tr += getMoveCommand(assign.getLIRInstType());
+		tr += assign.getTargetRegister()+",R"+d+"\n";
 		
-		// insert assignment and variable LIR code
-		tr += assign.getLIRCode()+var.getLIRCode();
-		
+		// translate variable
+		LIRUpType var = assignment.getVariable().accept(this, d+1);
+		tr += var.getLIRCode();
+				
 		// handle all variable cases
 		tr += getMoveCommand(var.getLIRInstType());
-		tr += assignReg+","+varReg+"\n";
+		tr += "R"+d+","+var.getTargetRegister()+"\n";
 		
 		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
