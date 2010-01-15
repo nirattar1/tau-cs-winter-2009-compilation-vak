@@ -5,6 +5,7 @@ package IC.LIR;
  */
 public enum LIRFlagEnum {
 	EXPLICIT,
+	STATEMENT,
 	ARR_LOCATION,
 	LOC_VAR_LOCATION,
 	EXT_VAR_LOCATION,

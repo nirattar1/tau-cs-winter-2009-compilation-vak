@@ -30,6 +30,8 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	private List<String> methods = new ArrayList<String>();
 	// main method string representation
 	private String mainMethod = "";
+	// counter for labels (if, while)
+	private int labelCounter = 0;
 	
 	/**
 	 * Program propagating visitor:
@@ -225,21 +227,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += assign.getLIRCode()+var.getLIRCode();
 		
 		// handle all variable cases
-		switch (var.getLIRInstType()){
-		case LOC_VAR_LOCATION:
-			// doesn't use any registers
-			tr += "Move ";
-			break;
-		case EXT_VAR_LOCATION:
-			// uses one register
-			tr += "MoveField ";
-			break;
-		case ARR_LOCATION:
-			tr += "MoveArray ";
-			break;
-		default:
-			System.err.println("*** BUG: TranslatePropagatingVisitor Assignment: unhandled LIR instruction type");
-		}
+		tr += getMoveCommand(var.getLIRInstType());
 		tr += assignReg+","+varReg+"\n";
 		
 		return new LIRUpType(tr, LIRFlagEnum.EXPLICIT,"");
@@ -291,19 +279,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			int fieldOffset = locationClassLayout.getFieldOffset(f);
 			
 			// translate this step
-			switch(loc.getLIRInstType()){
-			case LOC_VAR_LOCATION:
-				tr += "Move ";
-				break;
-			case EXT_VAR_LOCATION:
-				tr += "MoveField ";
-				break;
-			case ARR_LOCATION:
-				tr += "MoveArray ";
-				break;
-			default:
-				System.err.println("*** BUG: TranslatePropagatingVisitor VariableLocation: unhandled LIR instruction type");	
-			}
+			tr += getMoveCommand(loc.getLIRInstType());
 			String locReg = "R"+d;
 			tr += loc.getTargetRegister()+","+locReg+"\n";
 			
@@ -327,19 +303,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += array.getLIRCode();
 		
 		// move result to a single register
-		switch (array.getLIRInstType()){
-		case ARR_LOCATION:
-			tr += "MoveArray ";
-			break;
-		case LOC_VAR_LOCATION:
-			tr += "Move ";
-			break;
-		case EXT_VAR_LOCATION:
-			tr += "MoveField ";
-			break;
-		default:
-			System.err.println("*** BUG: TranslatePropagatingVisitor ArrayLocation: unhandled LIR instruction type");
-		}
+		tr += getMoveCommand(array.getLIRInstType());
 		tr += array.getTargetRegister()+",R"+d+"\n";
 		
 		// translate index
@@ -347,37 +311,67 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += index.getLIRCode();
 		
 		// move result to a single register
-		switch (index.getLIRInstType()){
-		case IMMEDIATE:
-			tr += "Move ";
-			break;
-		case LOC_VAR_LOCATION:
-			tr += "Move ";
-			break;
-		case EXT_VAR_LOCATION:
-			tr += "MoveField ";
-			break;
-		case ARR_LOCATION:
-			tr += "MoveArray ";
-			break;
-		default:
-			System.err.println("*** BUG: TranslatePropagatingVisitor ArrayLocation: unhandled LIR instruction type");
-		}
+		tr += getMoveCommand(index.getLIRInstType());
 		tr += index.getTargetRegister()+",R"+(d+1)+"\n";
 		
 		return new LIRUpType(tr, LIRFlagEnum.ARR_LOCATION,"R"+d+"[R"+(d+1)+"]");
 	}
 
+	/**
+	 * CallStatement propagating visitor:
+	 * - translate recursively the call expression and return its translation
+	 */
 	public LIRUpType visit(CallStatement callStatement, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		return callStatement.getCall().accept(this, d);
 	}
 
+	/**
+	 * Return propagating visitor:
+	 * - translate recursively the returned expression
+	 * - concatenate the translations to the LIR return statement update instruction
+	 */
 	public LIRUpType visit(Return returnStatement, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		LIRUpType returnVal = returnStatement.getValue().accept(this, d);
+		tr += returnVal.getLIRCode();
+		tr += "Return "+returnVal.getTargetRegister()+"\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT, "");
 	}
 
+	/**
+	 * If propagating visitor:
+	 * - translate recursively the condition, then statement and else statement
+	 * - concatenate the translations to the LIR if statement update instruction
+	 */
 	public LIRUpType visit(If ifStatement, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		String falseLabel = "_false_label"+labelCounter;
+		String endLabel = "_end_label"+(labelCounter++);
+		
+		// recursive call the condition expression
+		LIRUpType condExp = ifStatement.getCondition().accept(this, d);
+		tr += getMoveCommand(condExp.getLIRInstType());
+		tr += condExp.getTargetRegister()+",R"+d+"\n";
+		
+		// check condition
+		tr += "Compare 0,R"+d+"\n";
+		tr += "JumpTrue "+falseLabel+"\n";
+		
+		// recursive call to the then statement
+		LIRUpType thenStat = ifStatement.getOperation().accept(this, d);
+		tr += thenStat.getLIRCode();
+		tr += "Jump "+endLabel+"\n";
+		
+		// recursive call to the else statement
+		tr += falseLabel+":\n";
+		if (ifStatement.hasElse()){
+			LIRUpType elseStat = ifStatement.getElseOperation().accept(this, d);
+			tr += elseStat.getLIRCode();
+		}
+		tr += endLabel+":\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,""); //TODO update
 	}
 
 	public LIRUpType visit(While whileStatement, Integer d){
@@ -489,5 +483,22 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 
 	public void setMainMethod(String mainMethod) {
 		this.mainMethod = mainMethod;
+	}
+	
+	/**
+	 * returns the correct move command for the given LIR flag enum
+	 * @param type
+	 * @return
+	 */
+	private String getMoveCommand(LIRFlagEnum type){
+		switch(type){
+		case IMMEDIATE: return "Move ";
+		case LOC_VAR_LOCATION: return "Move ";
+		case EXT_VAR_LOCATION: return "MoveField ";
+		case ARR_LOCATION: return "MoveArray ";
+		default:
+			System.err.println("*** BUG: TranslatePropagatingVisitor: unhandled LIR instruction type");
+			return null;
+		}
 	}
 }
