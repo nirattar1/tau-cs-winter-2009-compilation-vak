@@ -6,6 +6,8 @@ import IC.TypeTable.*;
 import IC.LIR.LIRFlagEnum;
 import java.util.*;
 
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.MoveAction;
+
 /**
  * Translating visitor to LIR
  */
@@ -32,6 +34,8 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	private String mainMethod = "";
 	// counter for labels (if, while)
 	private int labelCounter = 0;
+	// identifier for current while
+	private int currWhileID = -1;
 	
 	/**
 	 * Program propagating visitor:
@@ -230,7 +234,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += getMoveCommand(var.getLIRInstType());
 		tr += assignReg+","+varReg+"\n";
 		
-		return new LIRUpType(tr, LIRFlagEnum.EXPLICIT,"");
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
 
 	/**
@@ -356,46 +360,152 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		
 		// check condition
 		tr += "Compare 0,R"+d+"\n";
-		tr += "JumpTrue "+falseLabel+"\n";
+		if (ifStatement.hasElse()) tr += "JumpTrue "+falseLabel+"\n";
+		else tr += "JumpTrue "+endLabel+"\n";
 		
 		// recursive call to the then statement
 		LIRUpType thenStat = ifStatement.getOperation().accept(this, d);
 		tr += thenStat.getLIRCode();
-		tr += "Jump "+endLabel+"\n";
 		
-		// recursive call to the else statement
-		tr += falseLabel+":\n";
 		if (ifStatement.hasElse()){
+			tr += "Jump "+endLabel+"\n";
+
+			// recursive call to the else statement
+			tr += falseLabel+":\n";
 			LIRUpType elseStat = ifStatement.getElseOperation().accept(this, d);
 			tr += elseStat.getLIRCode();
 		}
+		
 		tr += endLabel+":\n";
 		
-		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,""); //TODO update
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
 
+	/**
+	 * While propagating visitor:
+	 * - translate recursively the condition, and then statement
+	 * - concatenate the translations to the LIR while statement update instruction
+	 */
 	public LIRUpType visit(While whileStatement, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		// save while id previous value and set current
+		int prevWhileID = currWhileID;
+		currWhileID = labelCounter;
+		
+		String tr = "";
+		String whileLabel = "_while_cond_label"+labelCounter;
+		String endLabel = "_end_label"+(labelCounter++);
+		
+		tr += whileLabel+":\n";
+		// recursive call to condition
+		LIRUpType condExp = whileStatement.getCondition().accept(this, d);
+		tr += getMoveCommand(condExp.getLIRInstType());
+		tr += condExp.getTargetRegister()+",R"+d+"\n";
+		
+		// check condition
+		tr += "Compare 0,R"+d+"\n";
+		tr += "JumpTrue "+endLabel+"\n";
+		
+		// recursive call to operation statement
+		tr += whileStatement.getOperation().accept(this,d).getLIRCode();
+		tr += "Jump "+whileLabel+"\n";
+		tr += endLabel+":\n";
+		
+		// set while id back to previous value
+		currWhileID = prevWhileID;
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
 
+	/**
+	 * Break propagating visitor:
+	 * - return the break statement
+	 */
 	public LIRUpType visit(Break breakStatement, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "Jump _end_label"+currWhileID+"\n";
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
 
+	/**
+	 * Continue propagating visitor:
+	 * - return the continue statement
+	 */
 	public LIRUpType visit(Continue continueStatement, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "Jump _while_cond_label"+currWhileID+"\n";
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
 
+	/**
+	 * StatementsBlock propagating visitor:
+	 * - translate recursively all statements in the block
+	 * - concatenate the translations to the LIR code
+	 */
 	public LIRUpType visit(StatementsBlock statementsBlock, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		
+		// recursive call to all statements in the block
+		for (Statement s: statementsBlock.getStatements()){
+			tr += s.accept(this, d).getLIRCode();
+		}
+		
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
 
+	/**
+	 * LocalVariable propagating visitor:
+	 * - translate recursively the init value
+	 * - concatenate the translations to the LIR local variable statement instruction
+	 */
 	public LIRUpType visit(LocalVariable localVariable, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		
+		if (localVariable.hasInitValue()){
+			LIRUpType initVal = localVariable.getInitValue().accept(this, d);
+			tr += initVal.getLIRCode();
+			tr += getMoveCommand(initVal.getLIRInstType());
+			tr += initVal.getTargetRegister()+",R"+d+"\n";
+			// move register into the local var name
+			tr += "Move R"+d+","+localVariable.getName()+"\n";
+		}
+		
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
 
+	/**
+	 * StaticCall propagating visitor:
+	 * - translate recursively the list of arguments
+	 * - concatenate the translations to the LIR static call statement instruction
+	 */
 	public LIRUpType visit(StaticCall call, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		
+		// recursive calls to all arguments
+		int i = d;
+		for (Expression arg: call.getArguments()){
+			LIRUpType argExp = arg.accept(this, i);
+			tr += "# argument #"+(i-d)+":\n";
+			tr += argExp.getLIRCode();
+			tr += getMoveCommand(argExp.getLIRInstType());
+			tr += argExp.getTargetRegister()+",R"+i+"\n";
+			// increment registers count
+			i++;
+		}
+		
+		// call statement
+		ClassLayout thisClassLayout = classLayouts.get(call.getClassName());
+		Method thisMethod = thisClassLayout.getMethodFromName(call.getName());
+		tr += "# call statement:\n";
+		// construct method label
+		String methodName = "_"+((ClassSymbolTable) thisMethod.getEnclosingScope()).getMySymbol().getName()+
+							"_"+call.getName();
+		tr += "StaticCall "+methodName+"(";
+		// insert <formal>=<argument register>
+		for(i = 0; i < call.getArguments().size(); i++){
+			tr += thisMethod.getFormals().get(i)+"=R"+(d+i)+",";
+		}
+		// remove last comma
+		tr = tr.substring(0, tr.length()-1);
+		tr += "),R"+d+"\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
 	}
 
 	public LIRUpType visit(VirtualCall call, Integer d){

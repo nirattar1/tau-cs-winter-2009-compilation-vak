@@ -15,6 +15,7 @@ public class ClassLayout {
 	private ICClass icClass;
 	private Map<Method,Integer> methodToOffset = new HashMap<Method,Integer>();
 	private Map<Field,Integer> fieldToOffset = new HashMap<Field,Integer>();
+	private Map<String,Method> nameToMethod = new HashMap<String,Method>();
 	private int methodCounter = 0;
 	private int fieldCounter = 1;
 	
@@ -33,6 +34,11 @@ public class ClassLayout {
 		// put fields
 		for(Field f: icClass.getFields()){
 			fieldToOffset.put(f, fieldCounter++);
+		}
+		
+		// create string to method
+		for(Method m: methodToOffset.keySet()){
+			nameToMethod.put(m.getName(), m);
 		}
 	}
 	
@@ -74,6 +80,11 @@ public class ClassLayout {
 		for(Field f: icClass.getFields()){
 			fieldToOffset.put(f, fieldCounter++);
 		}
+		
+		// create string to method
+		for(Method m: methodToOffset.keySet()){
+			nameToMethod.put(m.getName(), m);
+		}
 	}
 	
 	
@@ -114,6 +125,15 @@ public class ClassLayout {
 	}
 	
 	/**
+	 * get method's offset by name
+	 * @param name
+	 * @return
+	 */
+	public Integer getMethodOffset(String name){
+		return getMethodOffset(nameToMethod.get(name));
+	}
+	
+	/**
 	 * getter for map of fields and offsets
 	 * @return
 	 */
@@ -128,6 +148,23 @@ public class ClassLayout {
 	 */
 	public Integer getFieldOffset(Field f){
 		return fieldToOffset.get(f);
+	}
+	
+	/**
+	 * getter for map of names and methods
+	 * @return
+	 */
+	public Map<String,Method> getNameToMethodMap(){
+		return this.nameToMethod;
+	}
+	
+	/**
+	 * getter for method by its name
+	 * @param name
+	 * @return
+	 */
+	public Method getMethodFromName(String name){
+		return nameToMethod.get(name);
 	}
 	
 	//////////////
