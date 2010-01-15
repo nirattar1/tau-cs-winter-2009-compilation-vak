@@ -13,7 +13,11 @@ public class TypeTable {
     private static Map<String,MethodType> uniqueMethodTypes = new HashMap<String,MethodType>();
     private static Map<String,Type> uniquePrimitiveTypes = new HashMap<String,Type>();
     
-    protected static int idCounter = 0;
+    public static Map<String, Type> getUniquePrimitiveTypes() {
+		return uniquePrimitiveTypes;
+	}
+
+	protected static int idCounter = 0;
     private static String icFileName = null;
     
     /**

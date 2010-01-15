@@ -1,5 +1,6 @@
 package IC.LIR;
 
+import IC.BinaryOps;
 import IC.AST.*;
 import IC.SymbolTable.*;
 import IC.TypeTable.*;
@@ -176,6 +177,11 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			methodLIRCode += s.accept(this,0);
 		}
 		
+		// if method is void, concatenate a "return 9999"
+		if(method.getType().getName().equals("void")){
+			methodLIRCode += "Return 9999\n";
+		}
+		
 		// update methods list
 		methods.add(methodLIRCode);
 		
@@ -337,9 +343,13 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 */
 	public LIRUpType visit(Return returnStatement, Integer d){
 		String tr = "";
-		LIRUpType returnVal = returnStatement.getValue().accept(this, d);
-		tr += returnVal.getLIRCode();
-		tr += "Return "+returnVal.getTargetRegister()+"\n";
+		if (returnStatement.hasValue()){
+			LIRUpType returnVal = returnStatement.getValue().accept(this, d);
+			tr += returnVal.getLIRCode();
+			tr += "Return "+returnVal.getTargetRegister()+"\n";
+		} else {
+			tr += "Return 9999\n";
+		}
 		
 		return new LIRUpType(tr, LIRFlagEnum.STATEMENT, "");
 	}
@@ -597,7 +607,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	/**
 	 * NewClass propagating visitor:
 	 * - translate new expression
-	 * - return LIR instruction
+	 * - return LIR code
 	 */
 	public LIRUpType visit(NewClass newClass, Integer d){
 		ClassLayout thisClassLayout = classLayouts.get(newClass.getName());
@@ -610,7 +620,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	/**
 	 * NewArray propagating visitor:
 	 * - translate new expression
-	 * - return LIR instruction
+	 * - return LIR code
 	 */
 	public LIRUpType visit(NewArray newArray, Integer d){
 		String tr = "";
@@ -627,32 +637,213 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * Length propagating visitor:
+	 * - translate the length expression
+	 * - return LIR code
+	 */
 	public LIRUpType visit(Length length, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		
+		// recursive call to array expression
+		LIRUpType array = length.getArray().accept(this, d);
+		tr += array.getLIRCode();
+		tr += getMoveCommand(array.getLIRInstType());
+		tr += array.getTargetRegister()+",R"+d+"\n";
+		
+		// get length
+		tr += "ArrayLength R"+d+",R"+d+"\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * MathBinaryOp propagating visitor:
+	 * - translate recursively the operator and operands
+	 * - return the LIR code
+	 */
 	public LIRUpType visit(MathBinaryOp binaryOp, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "";
+		
+		// recursive call to operands
+		LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d);
+		tr += operand1.getLIRCode();
+		tr += getMoveCommand(operand1.getLIRInstType());
+		tr += operand1.getTargetRegister()+",R"+d+"\n";
+		
+		LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d+1);
+		tr += operand2.getLIRCode();
+		tr += getMoveCommand(operand2.getLIRInstType());
+		tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
+		
+		// operation
+		switch (binaryOp.getOperator()){
+		case PLUS:
+			// check if operation is on strings or on integers
+			IC.TypeTable.Type operandsType = (IC.TypeTable.Type) binaryOp.getFirstOperand().accept(new DefTypeSemanticChecker(global));
+			if (operandsType.subtypeOf(IC.TypeTable.TypeTable.getUniquePrimitiveTypes().get("int"))){
+				tr += "Add R"+(d+1)+",R"+d+"\n";
+			} else { // strings
+				tr += "Library __stringCat(R"+d+",R"+(d+1)+"),R"+d+"\n";
+			}
+			break;
+		case MINUS:
+			tr += "Sub R"+(d+1)+",R"+d+"\n";
+			break;
+		case MULTIPLY:
+			tr += "Mul R"+(d+1)+",R"+d+"\n";
+			break;
+		case DIVIDE:
+			tr += "Div R"+(d+1)+",R"+d+"\n";
+			break;
+		case MOD:
+			tr += "Mod R"+(d+1)+",R"+d+"\n";
+			break;
+		default:
+			System.err.println("*** YOUR PARSER SUCKS ***");
+		}
+		
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * LogicalBinaryOp propagating visitor:
+	 * - translate recursively the operator and operands
+	 * - return the LIR code
+	 */
 	public LIRUpType visit(LogicalBinaryOp binaryOp, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String trueLabel = "_true_label"+labelCounter;
+		String falseLabel = "_false_label"+labelCounter;
+		String endLabel = "_end_label"+(labelCounter++);
+		String tr = "";
+		
+		// recursive call to operands
+		LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d);
+		tr += operand1.getLIRCode();
+		tr += getMoveCommand(operand1.getLIRInstType());
+		tr += operand1.getTargetRegister()+",R"+d+"\n";
+		
+		LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d+1);
+		tr += operand2.getLIRCode();
+		tr += getMoveCommand(operand2.getLIRInstType());
+		tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
+		
+		// operation
+		if (binaryOp.getOperator() != BinaryOps.LAND && binaryOp.getOperator() != BinaryOps.LOR){
+			tr += "Compare R"+(d+1)+",R"+d+"\n";
+		}
+		switch (binaryOp.getOperator()){
+		case EQUAL:
+			tr += "JumpTrue "+trueLabel+"\n";
+			break;
+		case NEQUAL:
+			tr += "JumpFalse "+trueLabel+"\n";
+			break;
+		case GT:
+			tr += "JumpG "+trueLabel+"\n";
+			break;
+		case GTE:
+			tr += "JumpGE "+trueLabel+"\n";
+			break;
+		case LT:
+			tr += "JumpL "+trueLabel+"\n";
+			break;
+		case LTE:
+			tr += "JumpLE "+trueLabel+"\n";
+			break;
+		case LAND:
+			tr += "Compare 0,R"+d+"\n";
+			tr += "JumpTrue "+falseLabel+"\n";
+			tr += "Compare 0,R"+(d+1)+"\n";
+			tr += "JumpTrue "+falseLabel+"\n";
+			tr += "Jump "+trueLabel+"\n";
+			tr += falseLabel+":\n"; 
+			break;
+		case LOR:
+			tr += "Compare 0,R"+d+"\n";
+			tr += "JumpFalse "+trueLabel+"\n";
+			tr += "Compare 0,R"+(d+1)+"\n";
+			tr += "JumpFalse "+trueLabel+"\n"; 
+			break;
+		default:
+			System.err.println("*** YOUR PARSER SUCKS ***");	
+		}
+		tr += "Move 0,R"+d+"\n";
+		tr += "Jump "+endLabel+"\n";
+		tr += trueLabel+":\n";
+		tr += "Move 1,R"+d+"\n";
+		tr += endLabel+":\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * MathUnaryOp propagating visitor:
+	 * - translate the operation
+	 * - return the LIR code
+	 */
 	public LIRUpType visit(MathUnaryOp unaryOp, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String tr = "Neg R"+d+"\n";
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * LogicalUnaryOp propagating visitor:
+	 * - translate the operation
+	 * - return the LIR code
+	 */
 	public LIRUpType visit(LogicalUnaryOp unaryOp, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String trueLabel = "_true_label"+labelCounter;
+		String endLabel = "_end_label"+(labelCounter++);
+		
+		String tr = "Compare 0,R"+d+"\n";
+		tr += "JumpTrue "+trueLabel+"\n";
+		tr += "Move 0,R"+d+"\n";
+		tr += "Jump "+endLabel+"\n";
+		tr += trueLabel+":\n";
+		tr += "Move 1,R"+d+"\n";
+		tr += endLabel+":\n";
+		
+		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
+	/**
+	 * Literal propagating visitor:
+	 * - translate the literal expression
+	 * - return the LIR code
+	 */
 	public LIRUpType visit(Literal literal, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		String litStr = "";
+		
+		switch (literal.getType()){
+		case STRING:
+			if (!stringLiterals.containsKey(literal.getValue()))
+				stringLiterals.put(((String) literal.getValue()), "str"+(stringLiteralsCounter++));
+			litStr = stringLiterals.get(literal.getValue());
+			break;
+		case INTEGER:
+			litStr = literal.getValue().toString();
+			break;
+		case NULL:
+			litStr = "0";
+			break;
+		case FALSE:
+			litStr = "0";
+			break;
+		case TRUE:
+			litStr = "1";
+		}
+		
+		return new LIRUpType("", LIRFlagEnum.LITERAL,litStr);
 	}
 
+	/**
+	 * ExpressionBlock propagating visitor:
+	 * translate the expression in the block
+	 * - return the LIR code
+	 */
 	public LIRUpType visit(ExpressionBlock expressionBlock, Integer d){
-		return new LIRUpType("", LIRFlagEnum.EXPLICIT,""); //TODO update
+		return expressionBlock.accept(this, d);
 	}
 	
 	// getters and setters
@@ -708,8 +899,8 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 */
 	private String getMoveCommand(LIRFlagEnum type){
 		switch(type){
-		case IMMEDIATE: return "Move ";
 		case REGISTER: return "Move ";
+		case LITERAL: return "Move ";
 		case LOC_VAR_LOCATION: return "Move ";
 		case EXT_VAR_LOCATION: return "MoveField ";
 		case ARR_LOCATION: return "MoveArray ";
