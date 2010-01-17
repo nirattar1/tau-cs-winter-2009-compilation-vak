@@ -427,6 +427,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += whileLabel+":\n";
 		// recursive call to condition
 		LIRUpType condExp = whileStatement.getCondition().accept(this, d);
+		tr += condExp.getLIRCode();
 		tr += getMoveCommand(condExp.getLIRInstType());
 		tr += condExp.getTargetRegister()+",R"+d+"\n";
 		
