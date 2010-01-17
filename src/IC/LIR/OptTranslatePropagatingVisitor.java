@@ -714,17 +714,32 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	 */
 	public LIRUpType visit(MathBinaryOp binaryOp, Integer d){
 		String tr = "";
+		// decide which block will be first by the Setti-Ulman algorithm
+		boolean suBool = binaryOp.getFirstOperand().getRequiredRegs() >= binaryOp.getSecondOperand().getRequiredRegs(); 
 		
-		// recursive call to operands
-		LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d);
-		tr += operand1.getLIRCode();
-		tr += getMoveCommand(operand1.getLIRInstType());
-		tr += operand1.getTargetRegister()+",R"+d+"\n";
-		
-		LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d+1);
-		tr += operand2.getLIRCode();
-		tr += getMoveCommand(operand2.getLIRInstType());
-		tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
+		if (suBool){
+			// recursive call to operands
+			LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d);
+			tr += operand1.getLIRCode();
+			tr += getMoveCommand(operand1.getLIRInstType());
+			tr += operand1.getTargetRegister()+",R"+d+"\n";
+			
+			LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d+1);
+			tr += operand2.getLIRCode();
+			tr += getMoveCommand(operand2.getLIRInstType());
+			tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
+		} else {
+			// recursive call to operands
+			LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d);
+			tr += operand2.getLIRCode();
+			tr += getMoveCommand(operand2.getLIRInstType());
+			tr += operand2.getTargetRegister()+",R"+d+"\n";
+			
+			LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d+1);
+			tr += operand1.getLIRCode();
+			tr += getMoveCommand(operand1.getLIRInstType());
+			tr += operand1.getTargetRegister()+",R"+(d+1)+"\n";
+		}
 		
 		// operation
 		switch (binaryOp.getOperator()){
@@ -734,23 +749,33 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			if (operandsType.subtypeOf(IC.TypeTable.TypeTable.getUniquePrimitiveTypes().get("int"))){
 				tr += "Add R"+(d+1)+",R"+d+"\n";
 			} else { // strings
-				tr += "Library __stringCat(R"+d+",R"+(d+1)+"),R"+d+"\n";
+				tr += suBool ? 
+						"Library __stringCat(R"+d+",R"+(d+1)+"),R"+d+"\n":
+						"Library __stringCat(R"+(d+1)+",R"+d+"),R"+d+"\n";
 			}
 			break;
 		case MINUS:
-			tr += "Sub R"+(d+1)+",R"+d+"\n";
+			tr += suBool?
+					"Sub R"+(d+1)+",R"+d+"\n":
+					"Sub R"+d+",R"+(d+1)+"\n" +	"Move R"+(d+1)+",R"+d+"\n";
 			break;
 		case MULTIPLY:
 			tr += "Mul R"+(d+1)+",R"+d+"\n";
 			break;
 		case DIVIDE:
 			// check division by zero
-			tr += "StaticCall __checkZero(b=R"+(d+1)+"),Rdummy\n";
+			tr += suBool ?
+					"StaticCall __checkZero(b=R"+(d+1)+"),Rdummy\n":
+					"StaticCall __checkZero(b=R"+d+"),Rdummy\n";
 			
-			tr += "Div R"+(d+1)+",R"+d+"\n";
+			tr += suBool ?
+					"Div R"+(d+1)+",R"+d+"\n":
+					"Div R"+d+",R"+(d+1)+"\n" + "Move R"+(d+1)+",R"+d+"\n";
 			break;
 		case MOD:
-			tr += "Mod R"+(d+1)+",R"+d+"\n";
+			tr += suBool ?
+					"Mod R"+(d+1)+",R"+d+"\n":
+					"Mod R"+d+",R"+(d+1)+"\n" + "Move R"+(d+1)+",R"+d+"\n";
 			break;
 		default:
 			System.err.println("*** YOUR PARSER SUCKS ***");
@@ -769,21 +794,39 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		String falseLabel = "_false_label"+labelCounter;
 		String endLabel = "_end_label"+(labelCounter++);
 		String tr = "";
+		// decide which block will be first by the Setti-Ulman algorithm
+		boolean suBool = binaryOp.getFirstOperand().getRequiredRegs() >= binaryOp.getSecondOperand().getRequiredRegs(); 
 		
-		// recursive call to operands
-		LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d);
-		tr += operand1.getLIRCode();
-		tr += getMoveCommand(operand1.getLIRInstType());
-		tr += operand1.getTargetRegister()+",R"+d+"\n";
+		if (suBool){
+			// recursive call to operands
+			LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d);
+			tr += operand1.getLIRCode();
+			tr += getMoveCommand(operand1.getLIRInstType());
+			tr += operand1.getTargetRegister()+",R"+d+"\n";
+			
+			LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d+1);
+			tr += operand2.getLIRCode();
+			tr += getMoveCommand(operand2.getLIRInstType());
+			tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
+		} else {
+			// recursive call to operands
+			LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d);
+			tr += operand2.getLIRCode();
+			tr += getMoveCommand(operand2.getLIRInstType());
+			tr += operand2.getTargetRegister()+",R"+d+"\n";
+			
+			LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d+1);
+			tr += operand1.getLIRCode();
+			tr += getMoveCommand(operand1.getLIRInstType());
+			tr += operand1.getTargetRegister()+",R"+(d+1)+"\n";
+		}
 		
-		LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d+1);
-		tr += operand2.getLIRCode();
-		tr += getMoveCommand(operand2.getLIRInstType());
-		tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
 		
 		// operation
 		if (binaryOp.getOperator() != BinaryOps.LAND && binaryOp.getOperator() != BinaryOps.LOR){
-			tr += "Compare R"+(d+1)+",R"+d+"\n";
+			tr += suBool ?
+					"Compare R"+(d+1)+",R"+d+"\n":
+					"Compare R"+d+",R"+(d+1)+"\n";
 		}
 		switch (binaryOp.getOperator()){
 		case EQUAL:

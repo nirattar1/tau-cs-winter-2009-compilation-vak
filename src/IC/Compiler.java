@@ -3,6 +3,7 @@ package IC;
 import java.io.*;
 
 import IC.LIR.OptTranslatePropagatingVisitor;
+import IC.LIR.RegCounterVisitor;
 import IC.LIR.TranslatePropagatingVisitor;
 import IC.Parser.*;
 import IC.AST.*;
@@ -168,9 +169,13 @@ public class Compiler {
 		if (printlir_flag){
 			GlobalSymbolTable global = (GlobalSymbolTable)globalSymTab;
 			// build translating visitor - standard or optimized
-			TranslatePropagatingVisitor translator = optlir_flag ?
-					new OptTranslatePropagatingVisitor(global):
-					new TranslatePropagatingVisitor(global);
+			TranslatePropagatingVisitor translator = optlir_flag ? new OptTranslatePropagatingVisitor(global):
+				new TranslatePropagatingVisitor(global);
+			
+			// if in optimized mode, set ASTNodes weights in registers
+			if (optlir_flag){
+				int progWeight = (Integer) root.accept(new RegCounterVisitor()); 
+			}
 			
 			String tr = root.accept(translator, 0).getLIRCode();
 			

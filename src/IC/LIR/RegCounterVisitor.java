@@ -348,57 +348,107 @@ public class RegCounterVisitor implements Visitor {
 	}
 
 	@Override
+	/**
+	 * NewClass visitor: always 0
+	 */
 	public Object visit(NewClass newClass) {
-		// TODO Auto-generated method stub
-		return null;
+		newClass.setRequiredRegs(0);
+		return 0;
 	}
 
 	@Override
+	/**
+	 * NewArray visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
 	public Object visit(NewArray newArray) {
-		// TODO Auto-generated method stub
-		return null;
+		int res = (Integer)newArray.getSize().accept(this);
+		newArray.setRequiredRegs(res);
+		return res;
 	}
 
 	@Override
+	/**
+	 * Length visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
 	public Object visit(Length length) {
-		// TODO Auto-generated method stub
-		return null;
+		int res = (Integer)length.getArray().accept(this);
+		length.setRequiredRegs(res);
+		return res;
 	}
 
 	@Override
+	/**
+	 * MathBinaryOp visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
 	public Object visit(MathBinaryOp binaryOp) {
-		// TODO Auto-generated method stub
-		return null;
+		int res = getSettiUlmanVal(binaryOp.getFirstOperand().accept(this),
+									binaryOp.getSecondOperand().accept(this));
+		binaryOp.setRequiredRegs(res);
+		return res;
 	}
 
 	@Override
+	/**
+	 * LogicalBinaryOp visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
 	public Object visit(LogicalBinaryOp binaryOp) {
-		// TODO Auto-generated method stub
-		return null;
+		int res = getSettiUlmanVal(binaryOp.getFirstOperand().accept(this),
+				binaryOp.getSecondOperand().accept(this));
+		binaryOp.setRequiredRegs(res);
+		return res;
 	}
 
 	@Override
+	/**
+	 * MathUnaryOp visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
 	public Object visit(MathUnaryOp unaryOp) {
-		// TODO Auto-generated method stub
-		return null;
+		int res = (Integer)unaryOp.getOperand().accept(this);
+		unaryOp.setRequiredRegs(res);
+		return res;
 	}
 
 	@Override
+	/**
+	 * LogicalUnaryOp visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
 	public Object visit(LogicalUnaryOp unaryOp) {
-		// TODO Auto-generated method stub
-		return null;
+		int res = (Integer)unaryOp.getOperand().accept(this);
+		unaryOp.setRequiredRegs(res);
+		return res;
 	}
 
 	@Override
+	/**
+	 * Literal visitor: always 0
+	 */
 	public Object visit(Literal literal) {
-		// TODO Auto-generated method stub
-		return null;
+		literal.setRequiredRegs(0);
+		return 0;
 	}
 
 	@Override
+	/**
+	 * ExpressionBlock visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
 	public Object visit(ExpressionBlock expressionBlock) {
-		// TODO Auto-generated method stub
-		return null;
+		int res = (Integer)expressionBlock.getExpression().accept(this);
+		expressionBlock.setRequiredRegs(res);
+		return res;
 	}
 	
 	/////////////
