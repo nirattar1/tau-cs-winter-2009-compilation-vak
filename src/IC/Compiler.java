@@ -2,7 +2,7 @@ package IC;
 
 import java.io.*;
 
-import IC.LIR.LIRUpType;
+import IC.LIR.OptTranslatePropagatingVisitor;
 import IC.LIR.TranslatePropagatingVisitor;
 import IC.Parser.*;
 import IC.AST.*;
@@ -18,6 +18,8 @@ public class Compiler {
 	private static boolean dumpsymtab = false;
 	private static String libic_path;
 	private static boolean libic_flag = false;
+	private static boolean printlir_flag = false;
+	private static boolean optlir_flag = false;
 	
 	/** 
 	 * Reads an IC-program, parses (builds an AST) and checks for lexical, syntactic and semantic errors
@@ -27,6 +29,8 @@ public class Compiler {
 	 * @param optional: -L<library_path> where library_path is the library-file path 
 	 * @param optional: -print-ast to pretty-print the ast (with library class in it, if given)
 	 * @param optional: -dump-symtab to print the symbol and type tables 
+	 * @param optional: -print-lir to print the LIR translation of the IC code
+	 * @param optional: -opt-lir to translate the LIR code with optimizations
 	 */
 	public static void main(String[] args) {
 		
@@ -66,6 +70,18 @@ public class Compiler {
 					libic_flag = true;
 					libic_path = s.substring(2);
 				}
+			} else if (s.equals("-print-lir")){ // -print-lir flag is on 
+				if (printlir_flag){ // already given "-print-lir"
+					System.out.println("Error: Wrong usage, -print-lir flag is given more than once");
+					printUsage();
+					System.exit(-1);
+				} else printlir_flag = true;
+			} else if (s.equals("-opt-lir")){ // -opt-lir flag is on
+				if (optlir_flag){ // already given "-opt-lir"
+					System.out.println("Error: Wrong usage, -opt-lir flag is given more than once");
+					printUsage();
+					System.exit(-1);
+				} else optlir_flag = true;
 			} else {
 				System.out.println("Error: Wrong usage");
 				printUsage();
@@ -149,30 +165,37 @@ public class Compiler {
 		//	LIR code translation phase	//
 		//////////////////////////////////
 		
-		// build translating visitor
-		TranslatePropagatingVisitor translator = new TranslatePropagatingVisitor((GlobalSymbolTable)globalSymTab);
-		String tr = root.accept(translator, 0).getLIRCode();
-		
-		// print LIR translation to file
-		String lirFileName = args[0].substring(0,args[0].length()-2)+"lir";
-		try {
-			BufferedWriter buff = new BufferedWriter(new FileWriter(lirFileName));
-			buff.write(tr);
-			buff.flush();
-			buff.close();
-		} catch (IOException e) {
-			System.err.println("Failed writing to file: "+lirFileName);
-			e.printStackTrace();
+		if (printlir_flag){
+			GlobalSymbolTable global = (GlobalSymbolTable)globalSymTab;
+			// build translating visitor - standard or optimized
+			TranslatePropagatingVisitor translator = optlir_flag ?
+					new OptTranslatePropagatingVisitor(global):
+					new TranslatePropagatingVisitor(global);
+			
+			String tr = root.accept(translator, 0).getLIRCode();
+			
+			// print LIR translation to file
+			String lirFileName = args[0].substring(0,args[0].length()-2)+"lir";
+			try {
+				BufferedWriter buff = new BufferedWriter(new FileWriter(lirFileName));
+				buff.write(tr);
+				buff.flush();
+				buff.close();
+			} catch (IOException e) {
+				System.err.println("Failed writing to file: "+lirFileName);
+				e.printStackTrace();
+			}
+			System.out.println("LIR translation");
+			System.out.println("===============");
+			System.out.println(tr);
 		}
-		System.out.println("LIR translation");
-		System.out.println("===============");
-		System.out.println(tr);
 	}
 	
 	/**
 	 * Prints usage information about this application to System.out
 	 */
 	public static void printUsage() {
-		System.out.println("Usage: IC.Compiler <file.ic> [-L<library_path>] [-print-ast] [-dump-symtab]");
+		System.out.println("Usage: IC.Compiler <file.ic> [-L<library_path>] [-print-ast] [-dump-symtab] "+
+				"[-print-lir] [-opt-lir]");
 	}
 }
