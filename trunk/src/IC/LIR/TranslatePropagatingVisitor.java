@@ -22,6 +22,49 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		TranslatePropagatingVisitor.global = global;
 	}
 	
+	// runtime checks
+	private String runtimeChecks =
+		"# Runtime checks:\n" +
+		"__checkNullRef:\n" +
+		"Move a,Rc1\n" +
+		"Compare 0,Rc1\n" +
+		"JumpTrue __checkNullRef_err\n" +
+		"Return 9999\n" +
+		"__checkNullRef_err:\n" +
+		"Library __println(str_null_ref),Rdummy\n" +
+		"Jump _error_exit\n\n" +
+		
+		"__checkArrayAccess:\n" +
+		"Move a,Rc1\n" +
+		"Move i,Rc2\n" +
+		"ArrayLength Rc1,Rc1\n" +
+		"Compare Rc1,Rc2\n" +
+		"JumpGE __checkArrayAccess_err\n" +
+		"Compare 0,Rc2\n" +
+		"JumpL __checkArrayAccess_err\n" +
+		"Return 9999\n" +
+		"__checkArrayAccess_err:\n" +
+		"Library __println(str_array_access),Rdummy\n" +
+		"Jump _error_exit\n\n" +
+		
+		"__checkSize:\n" +
+		"Move n,Rc1\n" +
+		"Compare 0,Rc1\n" +
+		"JumpL __checkSize_err\n" +
+		"Return 9999\n" +
+		"__checkSize_err:\n" +
+		"Library __println(str_size),Rdummy\n" +
+		"Jump _error_exit\n\n" +
+		
+		"__checkZero:\n" +
+		"Move b,Rc1\n" +
+		"Compare 0,Rc1\n" +
+		"JumpTrue __checkZero_err\n" +
+		"Return 9999\n" +
+		"__checkZero_err:\n" +
+		"Library __println(str_zero),Rdummy\n" +
+		"Jump _error_exit\n\n";
+		
 	// current class
 	private String currClassName = "";
 	// string literals counter
@@ -85,6 +128,12 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		
 		// (1) insert all string literals
 		lirBuffer += "# string literals\n";
+		// insert error messages strings
+		lirBuffer += "str_null_ref: \"Runtime Error: Null pointer dereference!\"\n";
+		lirBuffer += "str_array_access: \"Runtime Error: Array index out of bounds!\"\n";
+		lirBuffer += "str_size: \"Runtime Error: Array allocation with negative array size!\"\n";
+		lirBuffer += "str_zero: \"Runtime Error: Division by zero!\"\n";
+		
 		for (String strLiteral: this.stringLiterals.keySet()){
 			lirBuffer += this.getStringLiterals().get(strLiteral)+": \""+strLiteral+"\"\n";
 		}
@@ -98,6 +147,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		lirBuffer += "\n";
 		
 		// (3) insert all methods
+		// insert runtime check methods
+		lirBuffer += runtimeChecks;
+		// insert all user methods
 		lirBuffer += "# methods\n";
 		for (String methodStr: this.methods){
 			lirBuffer += methodStr+"\n";
@@ -106,6 +158,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		// (4) insert main method
 		lirBuffer += "# main method\n";
 		lirBuffer += this.mainMethod;
+		
+		// (5) insert error exit label
+		lirBuffer += "\n_error_exit:\n";
 		
 		return new LIRUpType(lirBuffer, LIRFlagEnum.EXPLICIT,"");
 	}
@@ -328,6 +383,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			String locReg = "R"+d;
 			tr += loc.getTargetRegister()+","+locReg+"\n";
 			
+			// check external location null reference
+			tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
+			
 			return new LIRUpType(tr, LIRFlagEnum.EXT_VAR_LOCATION, locReg+"."+fieldOffset);
 		}else{
 			// translate only the variable name
@@ -351,6 +409,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += getMoveCommand(array.getLIRInstType());
 		tr += array.getTargetRegister()+",R"+d+"\n";
 		
+		// check array null reference
+		tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
+		
 		// translate index
 		LIRUpType index = location.getIndex().accept(this, d+1);
 		tr += index.getLIRCode();
@@ -358,6 +419,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		// move result to a single register
 		tr += getMoveCommand(index.getLIRInstType());
 		tr += index.getTargetRegister()+",R"+(d+1)+"\n";
+		
+		// check array access
+		tr += "StaticCall __checkArrayAccess(a=R"+d+",i=R"+(d+1)+"),Rdummy\n";
 		
 		return new LIRUpType(tr, LIRFlagEnum.ARR_LOCATION,"R"+d+"[R"+(d+1)+"]");
 	}
@@ -595,6 +659,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			tr += location.getLIRCode();
 			tr += getMoveCommand(location.getLIRInstType());
 			tr += location.getTargetRegister()+",R"+d+"\n";
+			
+			// check location null reference
+			tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
 		} else {
 			tr += "Move this,R"+d+"\n";
 		}
@@ -671,6 +738,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		// multiply by 4
 		tr += "Mul 4,R"+d+"\n";
 		
+		// check given size n
+		tr += "StaticCall __checkSize(n=R"+d+"),Rdummy\n";
+		
 		// allocate memory
 		tr += "Library __allocateArray(R"+d+"),R"+d+"\n";
 		
@@ -690,6 +760,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += array.getLIRCode();
 		tr += getMoveCommand(array.getLIRInstType());
 		tr += array.getTargetRegister()+",R"+d+"\n";
+		
+		// check array null reference
+		tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
 		
 		// get length
 		tr += "ArrayLength R"+d+",R"+d+"\n";
@@ -734,6 +807,9 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			tr += "Mul R"+(d+1)+",R"+d+"\n";
 			break;
 		case DIVIDE:
+			// check division by zero
+			tr += "StaticCall __checkZero(b=R"+(d+1)+"),Rdummy\n";
+			
 			tr += "Div R"+(d+1)+",R"+d+"\n";
 			break;
 		case MOD:
@@ -823,7 +899,15 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * - return the LIR code
 	 */
 	public LIRUpType visit(MathUnaryOp unaryOp, Integer d){
-		String tr = "Neg R"+d+"\n";
+		String tr = "";
+		
+		// recursive call to operand
+		LIRUpType operand = unaryOp.getOperand().accept(this, d);
+		tr += operand.getLIRCode();
+		tr += getMoveCommand(operand.getLIRInstType());
+		tr += operand.getTargetRegister()+",R"+d+"\n";
+		
+		tr += "Neg R"+d+"\n";
 		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
 
@@ -833,10 +917,17 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 	 * - return the LIR code
 	 */
 	public LIRUpType visit(LogicalUnaryOp unaryOp, Integer d){
+		String tr = "";
 		String trueLabel = "_true_label"+labelCounter;
 		String endLabel = "_end_label"+(labelCounter++);
 		
-		String tr = "Compare 0,R"+d+"\n";
+		// recursive call to operand
+		LIRUpType operand = unaryOp.getOperand().accept(this, d);
+		tr += operand.getLIRCode();
+		tr += getMoveCommand(operand.getLIRInstType());
+		tr += operand.getTargetRegister()+",R"+d+"\n";
+		
+		tr += "Compare 0,R"+d+"\n";
 		tr += "JumpTrue "+trueLabel+"\n";
 		tr += "Move 0,R"+d+"\n";
 		tr += "Jump "+endLabel+"\n";
