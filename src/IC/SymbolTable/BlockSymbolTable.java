@@ -41,6 +41,17 @@ public class BlockSymbolTable extends SymbolTable {
 	}
 	
 	/**
+	 * get the depth of the symbol table
+	 * @param name
+	 * @return
+	 */
+	public int getVarDepthRec(String name){
+		int vd = varEntries.containsKey(name) ? this.getDepth() :
+			((BlockSymbolTable) parent).getVarDepthRec(name);
+		return vd;
+	}
+	
+	/**
 	 * a local variable symbol adder
 	 * @param name
 	 * @param typeName

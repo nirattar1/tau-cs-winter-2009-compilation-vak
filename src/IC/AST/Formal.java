@@ -43,4 +43,7 @@ public class Formal extends ASTNode {
 		return name;
 	}
 
+	public String getNameDepth(){
+		return name+this.getEnclosingScope().getDepth();
+	}
 }

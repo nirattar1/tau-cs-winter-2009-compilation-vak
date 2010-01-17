@@ -200,7 +200,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			// define all fields in the method's body
 			for(Field f: classLayout.getFieldToOffsetMap().keySet()){
 				methodLIRCode += "MoveField R"+d+"."+(classLayout.getFieldOffset(f))+",R"+(d+1)+"\n";
-				methodLIRCode += "Move R"+(d+1)+","+f.getName()+"\n";
+				methodLIRCode += "Move R"+(d+1)+","+f.getNameDepth()+"\n";
 			}
 		}
 		
@@ -331,7 +331,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			return new LIRUpType(tr, LIRFlagEnum.EXT_VAR_LOCATION, locReg+"."+fieldOffset);
 		}else{
 			// translate only the variable name
-			return new LIRUpType("",LIRFlagEnum.LOC_VAR_LOCATION,location.getName());
+			return new LIRUpType("",LIRFlagEnum.LOC_VAR_LOCATION,location.getNameDepth());
 		}
 	}
 
@@ -510,7 +510,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			tr += getMoveCommand(initVal.getLIRInstType());
 			tr += initVal.getTargetRegister()+",R"+d+"\n";
 			// move register into the local var name
-			tr += "Move R"+d+","+localVariable.getName()+"\n";
+			tr += "Move R"+d+","+localVariable.getNameDepth()+"\n";
 		}
 		
 		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
@@ -551,7 +551,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += "StaticCall "+methodName+"(";
 		// insert <formal>=<argument register>
 		for(i = 0; i < call.getArguments().size(); i++){
-			tr += thisMethod.getFormals().get(i).getName()+"=R"+(d+i)+",";
+			tr += thisMethod.getFormals().get(i).getNameDepth()+"=R"+(d+i)+",";
 		}
 		// remove last comma
 		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
@@ -622,7 +622,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		tr += offset+"(";
 		// insert <formal>=<argument register>
 		for(i = 0; i < call.getArguments().size(); i++){
-			tr += thisMethod.getFormals().get(i).getName()+"=R"+(d+i+1)+",";
+			tr += thisMethod.getFormals().get(i).getNameDepth()+"=R"+(d+i+1)+",";
 		}
 		// remove last comma
 		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
