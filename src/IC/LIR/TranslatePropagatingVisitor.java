@@ -187,6 +187,23 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		
 		methodLIRCode += methodLabel+":\n";
 		
+		// if the method is virtual, get the object's fields and put them in local variables
+		if (!method.isStatic()){
+			// get method's class layout
+			String className = ((ClassSymbolTable) method.getEnclosingScope()).getMySymbol().getName();
+			ClassLayout classLayout = classLayouts.get(className);
+			
+			// get the instance reference
+			methodLIRCode += "# get instance's fields\n";
+			methodLIRCode += "Move this,R"+d+"\n";
+			
+			// define all fields in the method's body
+			for(Field f: classLayout.getFieldToOffsetMap().keySet()){
+				methodLIRCode += "MoveField R"+d+"."+(classLayout.getFieldOffset(f))+",R"+(d+1)+"\n";
+				methodLIRCode += "Move R"+(d+1)+","+f.getName()+"\n";
+			}
+		}
+		
 		// insert method's code recursively
 		for (Statement s: method.getStatements()){
 			methodLIRCode += s.accept(this,0).getLIRCode();
