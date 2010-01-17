@@ -9,80 +9,17 @@ import java.util.*;
 
 /**
  * Translating visitor to LIR
+ * with optimizations
  */
-public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, LIRUpType>{
-
-	protected GlobalSymbolTable global;
+public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	
 	/**
 	 * constructor
 	 * @param global
 	 */
-	public TranslatePropagatingVisitor(GlobalSymbolTable global){
-		this.global = global;
+	public OptTranslatePropagatingVisitor(GlobalSymbolTable global){
+		super(global);
 	}
-	
-	// runtime checks
-	protected String runtimeChecks =
-		"# Runtime checks:\n" +
-		"__checkNullRef:\n" +
-		"Move a,Rc1\n" +
-		"Compare 0,Rc1\n" +
-		"JumpTrue __checkNullRef_err\n" +
-		"Return 9999\n" +
-		"__checkNullRef_err:\n" +
-		"Library __println(str_null_ref),Rdummy\n" +
-		"Jump _error_exit\n\n" +
-		
-		"__checkArrayAccess:\n" +
-		"Move a,Rc1\n" +
-		"Move i,Rc2\n" +
-		"ArrayLength Rc1,Rc1\n" +
-		"Compare Rc1,Rc2\n" +
-		"JumpGE __checkArrayAccess_err\n" +
-		"Compare 0,Rc2\n" +
-		"JumpL __checkArrayAccess_err\n" +
-		"Return 9999\n" +
-		"__checkArrayAccess_err:\n" +
-		"Library __println(str_array_access),Rdummy\n" +
-		"Jump _error_exit\n\n" +
-		
-		"__checkSize:\n" +
-		"Move n,Rc1\n" +
-		"Compare 0,Rc1\n" +
-		"JumpL __checkSize_err\n" +
-		"Return 9999\n" +
-		"__checkSize_err:\n" +
-		"Library __println(str_size),Rdummy\n" +
-		"Jump _error_exit\n\n" +
-		
-		"__checkZero:\n" +
-		"Move b,Rc1\n" +
-		"Compare 0,Rc1\n" +
-		"JumpTrue __checkZero_err\n" +
-		"Return 9999\n" +
-		"__checkZero_err:\n" +
-		"Library __println(str_zero),Rdummy\n" +
-		"Jump _error_exit\n\n";
-		
-	// current class
-	protected String currClassName = "";
-	// string literals counter
-	protected int stringLiteralsCounter = 0;
-	// string literals map, each element literal string is mapped to the format 'str<i>'
-	protected Map<String,String> stringLiterals = new HashMap<String,String>();
-	// class layouts
-	protected Map<String,ClassLayout> classLayouts = new HashMap<String,ClassLayout>();
-	// class dispatch tables, each element in the format: '_DV_<class name>: [<method1>,<method2>,...]'
-	protected List<String> classDispatchTable = new ArrayList<String>();
-	// methods procedural code string representation
-	protected List<String> methods = new ArrayList<String>();
-	// main method string representation
-	protected String mainMethod = "";
-	// counter for labels (if, while)
-	protected int labelCounter = 0;
-	// identifier for current while
-	protected int currWhileID = -1;
 	
 	/**
 	 * Program propagating visitor:
@@ -1021,24 +958,4 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 		this.mainMethod = mainMethod;
 	}
 	
-	// helpers
-	//////////
-	
-	/**
-	 * returns the correct move command for the given LIR flag enum
-	 * @param type
-	 * @return
-	 */
-	protected String getMoveCommand(LIRFlagEnum type){
-		switch(type){
-		case REGISTER: return "Move ";
-		case LITERAL: return "Move ";
-		case LOC_VAR_LOCATION: return "Move ";
-		case EXT_VAR_LOCATION: return "MoveField ";
-		case ARR_LOCATION: return "MoveArray ";
-		default:
-			System.err.println("*** BUG: TranslatePropagatingVisitor: unhandled LIR instruction type");
-			return null;
-		}
-	}
 }
