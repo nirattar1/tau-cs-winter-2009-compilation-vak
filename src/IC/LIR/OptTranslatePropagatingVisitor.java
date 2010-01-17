@@ -524,14 +524,19 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	 */
 	public LIRUpType visit(StaticCall call, Integer d){
 		String tr = "";
+		ClassLayout thisClassLayout = classLayouts.get(call.getClassName());
+		Method thisMethod = thisClassLayout.getMethodFromName(call.getName());
 		
-		// get the order of the evaluation for the parameters by the Setti-Ulman algorithm
-		int[] argsRegs = new int[call.getArguments().size()];
-		Expression[] args = new Expression[call.getArguments().size()];
+		// get the order of the evaluation for the parameters by the Setti-Ullman algorithm
+		int size = call.getArguments().size();
+		int[] argsRegs = new int[size];
+		Expression[] args = new Expression[size];
+		Formal[] formals = new Formal[size];
 		int i = 0;
 		for (Expression arg: call.getArguments()){
 			argsRegs[i] = arg.getRequiredRegs();
 			args[i] = arg;
+			formals[i] = thisMethod.getFormals().get(i);
 			i++;
 		}
 		// sort by descending weight
@@ -540,15 +545,20 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 				if (argsRegs[i] < argsRegs[j]){
 					int tmpReg = argsRegs[i];
 					Expression tmpArg = args[i];
+					Formal tmpFormal = formals[i];
+					
 					argsRegs[i] = argsRegs[j];
 					args[i] = args[j];
+					formals[i] = formals[j];
+					
 					argsRegs[j] = tmpReg;
 					args[j] = tmpArg;
+					formals[j] = tmpFormal;
 				}
 			}
 		}
 		
-		// recursive calls to all arguments
+		// recursive calls to all arguments by Setti-Ullman order
 		i = d;
 		for (Expression arg: args){
 			LIRUpType argExp = arg.accept(this, i);
@@ -562,12 +572,10 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		
 		// check if the call is to a library (static) method
 		if (call.getClassName().equals("Library")){
-			return libraryCallVisit(tr,call,d,argsRegs,args);
+			return libraryCallVisit(tr,call,d,argsRegs);
 		}
 		
 		// call statement
-		ClassLayout thisClassLayout = classLayouts.get(call.getClassName());
-		Method thisMethod = thisClassLayout.getMethodFromName(call.getName());
 		tr += "# call statement:\n";
 		// construct method label
 		String methodName = "_"+((ClassSymbolTable) thisMethod.getEnclosingScope()).getMySymbol().getName()+
@@ -575,7 +583,7 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		tr += "StaticCall "+methodName+"(";
 		// insert <formal>=<argument register>
 		for(i = 0; i < argsRegs.length ; i++){
-			tr += thisMethod.getFormals().get(i).getNameDepth()+"=R"+(d+i)+","; //TODO need another array for the formals
+			tr += formals[i].getNameDepth()+"=R"+(d+i)+",";
 		}
 		// remove last comma
 		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
@@ -591,12 +599,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	 * @param d
 	 * @return
 	 */
-	public LIRUpType libraryCallVisit(String argsTr, StaticCall call, Integer d,int[] argsRegs,Expression[] args){//TODO
+	public LIRUpType libraryCallVisit(String argsTr, StaticCall call, Integer d,int[] argsRegs){//TODO
 		String tr = argsTr; 
 		tr += "Library __"+call.getName()+"(";
-		// iterate over values (registers)
-		for(int i = 0; i < call.getArguments().size(); i++){
-			tr += "R"+(i+d)+",";
+		// iterate over values (registers) by Setti-Ullman order
+		for(int i = 0; i < argsRegs.length; i++){
+			tr += "R"+(argsRegs[i]+d)+",";
 		}
 		// remove last comma
 		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
@@ -737,7 +745,7 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	 */
 	public LIRUpType visit(MathBinaryOp binaryOp, Integer d){
 		String tr = "";
-		// decide which block will be first by the Setti-Ulman algorithm
+		// decide which block will be first by the Setti-Ullman algorithm
 		boolean suBool = binaryOp.getFirstOperand().getRequiredRegs() >= binaryOp.getSecondOperand().getRequiredRegs(); 
 		
 		if (suBool){
@@ -817,7 +825,7 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		String falseLabel = "_false_label"+labelCounter;
 		String endLabel = "_end_label"+(labelCounter++);
 		String tr = "";
-		// decide which block will be first by the Setti-Ulman algorithm
+		// decide which block will be first by the Setti-Ullman algorithm
 		boolean suBool = binaryOp.getFirstOperand().getRequiredRegs() >= binaryOp.getSecondOperand().getRequiredRegs(); 
 		
 		if (suBool){
