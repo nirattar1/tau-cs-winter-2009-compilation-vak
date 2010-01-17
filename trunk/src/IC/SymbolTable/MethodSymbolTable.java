@@ -92,6 +92,17 @@ public class MethodSymbolTable extends BlockSymbolTable {
 		}
 		return vs;
 	}
+	
+	/**
+	 * get the depth of the symbol table
+	 * @param name
+	 * @return
+	 */
+	public int getVarDepthRec(String name){
+		int vd = varEntries.containsKey(name) ? this.getDepth() :
+			((ClassSymbolTable) parent).getFieldDepthRec(name);
+		return vd;
+	}
 
 	/**
 	 * returns string representation for the MethodSymbolTable fitting the "-dump-symtab" IC.Compiler flag

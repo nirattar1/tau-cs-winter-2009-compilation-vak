@@ -1,6 +1,8 @@
 package IC.AST;
 
 import IC.LIR.*;
+import IC.SymbolTable.BlockSymbolTable;
+import IC.SymbolTable.ClassSymbolTable;
 
 /**
  * Class field AST node.
@@ -42,5 +44,8 @@ public class Field extends ASTNode {
 	public String getName() {
 		return name;
 	}
-
+	
+	public String getNameDepth(){
+		return name+((ClassSymbolTable) this.getEnclosingScope()).getFieldDepthRec(name);
+	}
 }

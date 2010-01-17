@@ -1,6 +1,7 @@
 package IC.AST;
 
 import IC.LIR.*;
+import IC.SymbolTable.BlockSymbolTable;
 
 /**
  * Variable reference AST node.
@@ -60,5 +61,8 @@ public class VariableLocation extends Location {
 	public String getName() {
 		return name;
 	}
-
+	
+	public String getNameDepth(){
+		return name+((BlockSymbolTable) this.getEnclosingScope()).getVarDepthRec(name);
+	}
 }

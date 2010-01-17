@@ -120,6 +120,27 @@ public class ClassSymbolTable extends SymbolTable {
 		}
 		return fs;
 	}
+	
+	/**
+	 * get the depth of the symbol table
+	 * @param name
+	 * @return
+	 */
+	public int getFieldDepthRec(String name){
+		int fd;
+		if(fieldEntries.containsKey(name)){
+			fd = this.getDepth(); 
+		} else {
+			if (hasSuper){
+				fd = ((ClassSymbolTable) parent).getFieldDepthRec(name); 
+			} else { //error
+				System.err.println("*** BUG: tried to fetch depth for a non existing field: "+name);
+				fd = -2;
+			}
+		}
+		
+		return fd;
+	}
 
 	/**
 	 * a field symbol adder

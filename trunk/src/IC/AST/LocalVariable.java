@@ -69,4 +69,7 @@ public class LocalVariable extends Statement {
 		return initValue;
 	}
 
+	public String getNameDepth(){
+		return name+this.getEnclosingScope().getDepth();
+	}
 }
