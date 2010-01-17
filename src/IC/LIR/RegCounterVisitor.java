@@ -1,5 +1,8 @@
 package IC.LIR;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
+
 import IC.AST.*;
 
 /**
@@ -247,32 +250,101 @@ public class RegCounterVisitor implements Visitor {
 	 * - return the result
 	 */
 	public Object visit(VariableLocation location) {
-		// TODO Auto-generated method stub
-		return null;
+		int res = 0;
+		if (location.isExternal()){
+			res = (Integer)location.getLocation().accept(this);
+		}
+		location.setRequiredRegs(res);
+		return res;
 	}
 
 	@Override
+	/**
+	 * ArrayLocation visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
 	public Object visit(ArrayLocation location) {
-		// TODO Auto-generated method stub
-		return null;
+		int res = getSettiUlmanVal(location.getArray().accept(this),
+									location.getIndex().accept(this));
+		location.setRequiredRegs(res);
+		return res;
 	}
 
 	@Override
-	public Object visit(StaticCall call) {
-		// TODO Auto-generated method stub
-		return null;
+	/**
+	 * StaticCall visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
+	public Object visit(StaticCall call) {		
+		// get all arguments required registers
+		int[] argsRegs = new int[call.getArguments().size()];
+		for (int i=0; i<argsRegs.length; i++){
+			argsRegs[i] = (Integer)call.getArguments().get(i).accept(this);
+		}
+		int res = MethodCallHelper(argsRegs);
+		
+		call.setRequiredRegs(res);
+		return res;
+		
 	}
 
 	@Override
+	/**
+	 * VirtualCall visitor:
+	 * - get the maximum number of required registers
+	 * - return the result
+	 */
 	public Object visit(VirtualCall call) {
-		// TODO Auto-generated method stub
-		return null;
+		// get all arguments required registers
+		int arrSize = call.isExternal() ? call.getArguments().size()+ 1 : call.getArguments().size();
+		int[] argsRegs = new int[arrSize];
+		for (int i=0; i<argsRegs.length; i++){
+			argsRegs[i] = (Integer)call.getArguments().get(i).accept(this);
+		}
+		if (call.isExternal()) argsRegs[argsRegs.length-1] = (Integer)call.getLocation().accept(this);
+		int res = MethodCallHelper(argsRegs);
+		
+		call.setRequiredRegs(res);
+		return res;
+	}
+	
+	/**
+	 * calculates the number of registers used by a method call,
+	 * considering the required registers for each parameter
+	 * and the location (if call is a virtual call with location)
+	 * @param argsRegs
+	 * @return
+	 */
+	public int MethodCallHelper(int[] argsRegs){
+		// calculate the maximum numbers of required registers
+		// first sort the array
+		Arrays.sort(argsRegs);
+		// reverse array
+		for (int i=0; i < (argsRegs.length/2); i++){
+			int tmp = argsRegs[i];
+			argsRegs[i] = argsRegs[argsRegs.length-i-1];
+			argsRegs[argsRegs.length-i-1] = tmp;
+		}
+		// the amazing algorithm of Kalev
+		for (int i=0; i < argsRegs.length-1; i++){
+			argsRegs[i+1] = getSettiUlmanVal(argsRegs[i], argsRegs[i+1]);
+			for (int j=i+2; j < argsRegs.length; j++){
+				argsRegs[j] = argsRegs[j] + 1; 
+			}
+		}
+		// now the last element is the result
+		return argsRegs[argsRegs.length-1];
 	}
 
 	@Override
+	/**
+	 * This visitor: always 0
+	 */
 	public Object visit(This thisExpression) {
-		// TODO Auto-generated method stub
-		return null;
+		thisExpression.setRequiredRegs(0);
+		return 0;
 	}
 
 	@Override
