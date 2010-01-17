@@ -525,9 +525,32 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	public LIRUpType visit(StaticCall call, Integer d){
 		String tr = "";
 		
-		// recursive calls to all arguments
-		int i = d;
+		// get the order of the evaluation for the parameters by the Setti-Ulman algorithm
+		int[] argsRegs = new int[call.getArguments().size()];
+		Expression[] args = new Expression[call.getArguments().size()];
+		int i = 0;
 		for (Expression arg: call.getArguments()){
+			argsRegs[i] = arg.getRequiredRegs();
+			args[i] = arg;
+			i++;
+		}
+		// sort by descending weight
+		for(i = 0; i < args.length; i++){
+			for (int j = 0; j < args.length; j++){
+				if (argsRegs[i] < argsRegs[j]){
+					int tmpReg = argsRegs[i];
+					Expression tmpArg = args[i];
+					argsRegs[i] = argsRegs[j];
+					args[i] = args[j];
+					argsRegs[j] = tmpReg;
+					args[j] = tmpArg;
+				}
+			}
+		}
+		
+		// recursive calls to all arguments
+		i = d;
+		for (Expression arg: args){
 			LIRUpType argExp = arg.accept(this, i);
 			tr += "# argument #"+(i-d)+":\n";
 			tr += argExp.getLIRCode();
@@ -539,7 +562,7 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		
 		// check if the call is to a library (static) method
 		if (call.getClassName().equals("Library")){
-			return libraryCallVisit(tr,call,d);
+			return libraryCallVisit(tr,call,d,argsRegs,args);
 		}
 		
 		// call statement
@@ -551,8 +574,8 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 							"_"+call.getName();
 		tr += "StaticCall "+methodName+"(";
 		// insert <formal>=<argument register>
-		for(i = 0; i < call.getArguments().size(); i++){
-			tr += thisMethod.getFormals().get(i).getNameDepth()+"=R"+(d+i)+",";
+		for(i = 0; i < argsRegs.length ; i++){
+			tr += thisMethod.getFormals().get(i).getNameDepth()+"=R"+(d+i)+","; //TODO need another array for the formals
 		}
 		// remove last comma
 		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
@@ -568,7 +591,7 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	 * @param d
 	 * @return
 	 */
-	public LIRUpType libraryCallVisit(String argsTr, StaticCall call, Integer d){
+	public LIRUpType libraryCallVisit(String argsTr, StaticCall call, Integer d,int[] argsRegs,Expression[] args){//TODO
 		String tr = argsTr; 
 		tr += "Library __"+call.getName()+"(";
 		// iterate over values (registers)
