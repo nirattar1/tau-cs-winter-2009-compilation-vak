@@ -530,6 +530,8 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		// get the order of the evaluation for the parameters by the Setti-Ullman algorithm
 		int size = call.getArguments().size();
 		int[] argsRegs = new int[size];
+		int[] orderRegs = new int[size]; // the ith element in this array will hold the register number used to store the ith argument (passed to libraryCallVists )
+		int[] orderRegsHelper = new int[size]; // an array to help build the orderRegs array
 		Expression[] args = new Expression[size];
 		Formal[] formals = new Formal[size];
 		int i = 0;
@@ -537,6 +539,7 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			argsRegs[i] = arg.getRequiredRegs();
 			args[i] = arg;
 			formals[i] = thisMethod.getFormals().get(i);
+			orderRegsHelper[i] = i;
 			i++;
 		}
 		// sort by descending weight
@@ -546,14 +549,17 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 					int tmpReg = argsRegs[i];
 					Expression tmpArg = args[i];
 					Formal tmpFormal = formals[i];
+					int orderRegsHelperTmp = orderRegsHelper[i];
 					
 					argsRegs[i] = argsRegs[j];
 					args[i] = args[j];
 					formals[i] = formals[j];
+					orderRegsHelper[i] = orderRegsHelper[j];
 					
 					argsRegs[j] = tmpReg;
 					args[j] = tmpArg;
 					formals[j] = tmpFormal;
+					orderRegsHelper[j] = orderRegsHelperTmp; 
 				}
 			}
 		}
@@ -570,9 +576,14 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			i++;
 		}
 		
+		// build the orderRegs array
+		for (int j = 0; j < orderRegsHelper.length; j++) {
+			orderRegs[orderRegsHelper[j]] = d+j; 
+		}
+		
 		// check if the call is to a library (static) method
 		if (call.getClassName().equals("Library")){
-			return libraryCallVisit(tr,call,d,argsRegs);
+			return libraryCallVisit(tr,call,d,orderRegs);
 		}
 		
 		// call statement
@@ -599,12 +610,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	 * @param d
 	 * @return
 	 */
-	public LIRUpType libraryCallVisit(String argsTr, StaticCall call, Integer d,int[] argsRegs){ //TODO
+	public LIRUpType libraryCallVisit(String argsTr, StaticCall call, Integer d,int[] orderRegs){
 		String tr = argsTr; 
 		tr += "Library __"+call.getName()+"(";
 		// iterate over values (registers) by Setti-Ullman order
-		for(int i = 0; i < argsRegs.length; i++){
-			tr += "R"+(argsRegs[i]+d)+",";
+		for(int i = 0; i < orderRegs.length; i++){
+			tr += "R"+orderRegs[i]+",";
 		}
 		// remove last comma
 		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
