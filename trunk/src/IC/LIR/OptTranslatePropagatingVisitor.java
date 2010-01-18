@@ -338,27 +338,55 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	public LIRUpType visit(ArrayLocation location, Integer d){
 		String tr = "";
 		
-		// translate array
-		LIRUpType array = location.getArray().accept(this, d);
-		tr += array.getLIRCode();
+		// decide which block will be first by the Setti Ullman method
+		boolean suBool = location.getArray().getRequiredRegs() >= location.getIndex().getRequiredRegs();  
 		
-		// move result to a single register
-		tr += getMoveCommand(array.getLIRInstType());
-		tr += array.getTargetRegister()+",R"+d+"\n";
-		
-		// check array null reference
-		tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
-		
-		// translate index
-		LIRUpType index = location.getIndex().accept(this, d+1);
-		tr += index.getLIRCode();
-		
-		// move result to a single register
-		tr += getMoveCommand(index.getLIRInstType());
-		tr += index.getTargetRegister()+",R"+(d+1)+"\n";
-		
-		// check array access
-		tr += "StaticCall __checkArrayAccess(a=R"+d+",i=R"+(d+1)+"),Rdummy\n";
+		if (suBool){
+			// translate array
+			LIRUpType array = location.getArray().accept(this, d);
+			tr += array.getLIRCode();
+
+			// move result to a single register
+			tr += getMoveCommand(array.getLIRInstType());
+			tr += array.getTargetRegister()+",R"+d+"\n";
+
+			// check array null reference
+			tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
+
+			// translate index
+			LIRUpType index = location.getIndex().accept(this, d+1);
+			tr += index.getLIRCode();
+
+			// move result to a single register
+			tr += getMoveCommand(index.getLIRInstType());
+			tr += index.getTargetRegister()+",R"+(d+1)+"\n";
+
+			// check array access
+			tr += "StaticCall __checkArrayAccess(a=R"+d+",i=R"+(d+1)+"),Rdummy\n";
+		} else {
+			// translate index
+			LIRUpType index = location.getIndex().accept(this, d);
+			tr += index.getLIRCode();
+
+			// move result to a single register
+			tr += getMoveCommand(index.getLIRInstType());
+			tr += index.getTargetRegister()+",R"+d+"\n";
+
+			// check array access
+			tr += "StaticCall __checkArrayAccess(a=R"+d+",i=R"+d+"),Rdummy\n";
+
+			// translate array
+			LIRUpType array = location.getArray().accept(this, d+1);
+			tr += array.getLIRCode();
+
+			// move result to a single register
+			tr += getMoveCommand(array.getLIRInstType());
+			tr += array.getTargetRegister()+",R"+(d+1)+"\n";
+
+			// check array null reference
+			tr += "StaticCall __checkNullRef(a=R"+(d+1)+"),Rdummy\n";
+
+		}
 		
 		return new LIRUpType(tr, LIRFlagEnum.ARR_LOCATION,"R"+d+"[R"+(d+1)+"]");
 	}
