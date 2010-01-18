@@ -63,6 +63,8 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		// return LIR representation for the IC program
 		String lirBuffer = "";
 		
+		lirBuffer += "# this is the optimized lir translation\n";
+		
 		// (1) insert all string literals
 		lirBuffer += "# string literals\n";
 		// insert error messages strings
