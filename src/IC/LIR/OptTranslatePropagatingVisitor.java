@@ -632,24 +632,66 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	public LIRUpType visit(VirtualCall call, Integer d){
 		String tr = "# virtual call location:\n";;
 		
-		// recursive call to call location
+		// get this method, and find offset in class
+		String className = !call.isExternal() ? currClassName :
+			((IC.TypeTable.ClassType) call.getLocation().accept(new DefTypeSemanticChecker(global))).getName();
+		ClassLayout thisClassLayout = classLayouts.get(className);
+		Method thisMethod = thisClassLayout.getMethodFromName(call.getName());
+		int offset = thisClassLayout.getMethodOffset(thisMethod);
+	
+		// get the order of the evaluation for the parameters by the Setti-Ullman algorithm
+		// same as in Static Call, but with the location as one of the array elements. 
+		int size = call.getArguments().size();
+		
+		if (call.isExternal()) size++;
+		
+		int[] argsRegs = new int[size];
+		boolean [] isLoc = new boolean[size]; // the ith element holds true iff the ith elem in args is the location 
+		Expression[] args = new Expression[size];
+		Formal[] formals = new Formal[size];
+		
+		int i = 0;
+		for (Expression arg: call.getArguments()){
+			argsRegs[i] = arg.getRequiredRegs();
+			args[i] = arg;
+			formals[i] = thisMethod.getFormals().get(i);
+			isLoc[i] = false;
+			i++;
+		}
 		if (call.isExternal()){
-			LIRUpType location = call.getLocation().accept(this, d);
-			tr += location.getLIRCode();
-			tr += getMoveCommand(location.getLIRInstType());
-			tr += location.getTargetRegister()+",R"+d+"\n";
-			
-			// check location null reference
-			tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
-		} else {
-			tr += "Move this,R"+d+"\n";
+			argsRegs[i] = call.getLocation().getRequiredRegs();
+			args[i] = call.getLocation();
+			formals[i] = null; // location has no corresponding formal.
+			isLoc[i] = true;
+		}
+				
+		// sort by descending weight
+		for(i = 0; i < args.length; i++){
+			for (int j = 0; j < args.length; j++){
+				if (argsRegs[i] < argsRegs[j]){
+					int tmpReg = argsRegs[i];
+					Expression tmpArg = args[i];
+					Formal tmpFormal = formals[i];
+					boolean tmpLoc = isLoc[i];
+					
+					argsRegs[i] = argsRegs[j];
+					args[i] = args[j];
+					formals[i] = formals[j];
+					isLoc[i] = isLoc[j];
+					
+					argsRegs[j] = tmpReg;
+					args[j] = tmpArg;
+					formals[j] = tmpFormal;
+					isLoc[j] = tmpLoc; 
+				}
+			}
 		}
 		
-		// recursive call to all arguments
-		int i = d+1;
-		for (Expression arg: call.getArguments()){
+		// recursive calls to all arguments by Setti-Ullman order
+		i = d;
+		for (Expression arg: args){
 			LIRUpType argExp = arg.accept(this, i);
-			tr += "# argument #"+(i-d-1)+":\n";
+			tr += "# argument #"+(i-d)+":\n";
 			tr += argExp.getLIRCode();
 			tr += getMoveCommand(argExp.getLIRInstType());
 			tr += argExp.getTargetRegister()+",R"+i+"\n";
@@ -657,19 +699,29 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			i++;
 		}
 		
-		// call statement
-		tr += "VirtualCall R"+d+".";
-		String className = !call.isExternal() ? currClassName :
-			((IC.TypeTable.ClassType) call.getLocation().accept(new DefTypeSemanticChecker(global))).getName();
-		ClassLayout thisClassLayout = classLayouts.get(className);
-		Method thisMethod = thisClassLayout.getMethodFromName(call.getName());
-		int offset = thisClassLayout.getMethodOffset(thisMethod);
+		// check location null reference if external, else move this to location
+		// start building the virtual call 
+		if (call.isExternal()){
+			// get the register that holds the location
+			int locReg = 0;
+			for (i = 0; i< size; i++){
+				if (isLoc[i]) locReg = d+i; 
+			}
+			tr += "StaticCall __checkNullRef(a=R"+locReg+"),Rdummy\n";
+			tr += "VirtualCall R"+locReg+".";
+		} else {
+			tr += "Move this,R"+(d + size)+"\n";
+			tr += "VirtualCall R"+(d + size)+".";
+		}
 		
 		tr += offset+"(";
 		// insert <formal>=<argument register>
-		for(i = 0; i < call.getArguments().size(); i++){
-			tr += thisMethod.getFormals().get(i).getNameDepth()+"=R"+(d+i+1)+",";
+		for (i = 0; i < size; i++){
+			if (! isLoc[i]){
+				tr += formals[i].getNameDepth()+"=R"+(d+i)+",";
+			}
 		}
+		
 		// remove last comma
 		if (tr.endsWith(",")) tr = tr.substring(0, tr.length()-1);
 		tr += "),R"+d+"\n";
