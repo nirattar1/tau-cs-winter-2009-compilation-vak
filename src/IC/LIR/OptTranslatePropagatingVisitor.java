@@ -21,6 +21,9 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		super(global);
 	}
 	
+	private ClassLayout libicLayout = null;
+	
+	
 	/**
 	 * Program propagating visitor:
 	 * - recursive calls to all classes in program
@@ -37,7 +40,10 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		
 		for(ICClass c: program.getClasses()){
 			// skip library method
-			if (c.getName().equals("Library")) continue;
+			if (c.getName().equals("Library")) {
+				libicLayout = new ClassLayout(c);
+				continue;
+			}
 			
 			// create class layout
 			ClassLayout classLayout;
@@ -555,7 +561,9 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	public LIRUpType visit(StaticCall call, Integer d){
 		String tr = "";
 		ClassLayout thisClassLayout = classLayouts.get(call.getClassName());
-		Method thisMethod = thisClassLayout.getMethodFromName(call.getName());
+		Method thisMethod = null;
+		if (call.getClassName().equals("Library")) thisMethod = libicLayout.getMethodFromName(call.getName());
+		else thisMethod = thisClassLayout.getMethodFromName(call.getName());
 		
 		// get the order of the evaluation for the parameters by the Setti-Ullman algorithm
 		int size = call.getArguments().size();
