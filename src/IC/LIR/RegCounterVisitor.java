@@ -300,7 +300,7 @@ public class RegCounterVisitor implements Visitor {
 		// get all arguments required registers
 		int arrSize = call.isExternal() ? call.getArguments().size()+ 1 : call.getArguments().size();
 		int[] argsRegs = new int[arrSize];
-		for (int i=0; i<argsRegs.length; i++){
+		for (int i=0; i<call.getArguments().size(); i++){
 			argsRegs[i] = (Integer)call.getArguments().get(i).accept(this);
 		}
 		if (call.isExternal()) argsRegs[argsRegs.length-1] = (Integer)call.getLocation().accept(this);
