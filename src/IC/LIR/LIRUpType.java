@@ -33,4 +33,13 @@ public class LIRUpType {
 	public String getTargetRegister() {
 		return targetRegister;
 	}
+	
+	public void setTargetRegister(String targetRegister) {
+		this.targetRegister = targetRegister;
+	}
+
+	public void setLIRInstType(LIRFlagEnum lIRInstType) {
+		LIRInstType = lIRInstType;
+	}
+
 }
