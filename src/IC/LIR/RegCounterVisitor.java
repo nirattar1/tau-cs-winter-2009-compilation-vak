@@ -11,7 +11,7 @@ import IC.AST.*;
  */
 public class RegCounterVisitor implements Visitor {
 
-	@Override
+	
 	/**
 	 * Program visitor:
 	 * - get the maximum number of required registers
@@ -28,7 +28,7 @@ public class RegCounterVisitor implements Visitor {
 		return maxRequired;
 	}
 
-	@Override
+	
 	/**
 	 * ICClass visitor:
 	 * - get the maximum number of required registers
@@ -45,7 +45,7 @@ public class RegCounterVisitor implements Visitor {
 		return maxRequired;
 	}
 
-	@Override
+	
 	/**
 	 * Field visitor: always 0
 	 */
@@ -54,7 +54,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * VirtualMethod visitor:
 	 * - get the maximum number of required registers
@@ -64,7 +64,7 @@ public class RegCounterVisitor implements Visitor {
 		return methodsHelper(method);
 	}
 
-	@Override
+	
 	/**
 	 * StaticMethod visitor:
 	 * - get the maximum number of required registers
@@ -90,7 +90,7 @@ public class RegCounterVisitor implements Visitor {
 		return maxRequired;
 	}
 
-	@Override
+	
 	/**
 	 * LibraryMethod visitor: always 0
 	 */
@@ -99,7 +99,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * Formal visitor: always 0
 	 */
@@ -108,7 +108,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * PrimitiveType visitor: always 0
 	 */
@@ -117,7 +117,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * UserType visitor: always 0
 	 */
@@ -126,7 +126,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * Assignment visitor:
 	 * - get the maximum number of required registers
@@ -140,7 +140,7 @@ public class RegCounterVisitor implements Visitor {
 		
 	}
 
-	@Override
+	
 	/**
 	 * CallStatement visitor:
 	 * - get the maximum number of required registers
@@ -152,7 +152,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * Return visitor:
 	 * - get the maximum number of required registers
@@ -164,7 +164,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * If visitor:
 	 * - get the maximum number of required registers
@@ -182,7 +182,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * While visitor:
 	 * - get the maximum number of required registers
@@ -195,7 +195,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * Break visitor: always 0
 	 */
@@ -204,7 +204,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * Continue visitor: always 0
 	 */
@@ -213,7 +213,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * StatementsBlock visitor:
 	 * - get the maximum number of required registers
@@ -230,7 +230,7 @@ public class RegCounterVisitor implements Visitor {
 		return maxRequired;
 	}
 
-	@Override
+	
 	/**
 	 * LocalVariable visitor:
 	 * - get the maximum number of required registers
@@ -243,7 +243,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * VariableLocation visitor:
 	 * - get the maximum number of required registers
@@ -258,7 +258,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * ArrayLocation visitor:
 	 * - get the maximum number of required registers
@@ -271,26 +271,27 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * StaticCall visitor:
 	 * - get the maximum number of required registers
 	 * - return the result
 	 */
-	public Object visit(StaticCall call) {		
+	public Object visit(StaticCall call) {
+		// returns MAX_VALUE always (to keep original order where called)
+		
 		// get all arguments required registers
-		int[] argsRegs = new int[call.getArguments().size()];
-		for (int i=0; i<argsRegs.length; i++){
-			argsRegs[i] = (Integer)call.getArguments().get(i).accept(this);
+		for (int i=0; i<call.getArguments().size(); i++){
+			call.getArguments().get(i).accept(this);
 		}
-		int res = MethodCallHelper(argsRegs);
+		int res = Integer.MAX_VALUE;
 		
 		call.setRequiredRegs(res);
 		return res;
 		
 	}
 
-	@Override
+	
 	/**
 	 * VirtualCall visitor:
 	 * - get the maximum number of required registers
@@ -298,55 +299,18 @@ public class RegCounterVisitor implements Visitor {
 	 */
 	public Object visit(VirtualCall call) {
 		// get all arguments required registers
-		int arrSize = call.isExternal() ? call.getArguments().size()+ 1 : call.getArguments().size();
-		int[] argsRegs = new int[arrSize];
 		for (int i=0; i<call.getArguments().size(); i++){
-			argsRegs[i] = (Integer)call.getArguments().get(i).accept(this);
+			call.getArguments().get(i).accept(this);
 		}
-		if (call.isExternal()) argsRegs[argsRegs.length-1] = (Integer)call.getLocation().accept(this);
-		//int res = MethodCallHelper(argsRegs);
+		if (call.isExternal()) call.getLocation().accept(this);
 		
 		// set the value in the VirtualCall ASTNode as MAX_INT, for keeping the original
 		// order of virtual calls
-		// call.setRequiredRegs(res);
 		call.setRequiredRegs(Integer.MAX_VALUE);
 		return Integer.MAX_VALUE;
 	}
 	
-	/**
-	 * calculates the number of registers used by a method call,
-	 * considering the required registers for each parameter
-	 * and the location (if call is a virtual call with location)
-	 * @param argsRegs
-	 * @return
-	 */
-	public int MethodCallHelper(int[] argsRegs){
-		// calculate the maximum numbers of required registers
-		// if one of the args is MAX_VALUE (i.e. virtual call), return MAX_VALUE
-		for (int arg : argsRegs) {
-			if (arg == Integer.MAX_VALUE) return Integer.MAX_VALUE;
-		}
-		
-		// first sort the array
-		Arrays.sort(argsRegs);
-		// reverse array
-		for (int i=0; i < (argsRegs.length/2); i++){
-			int tmp = argsRegs[i];
-			argsRegs[i] = argsRegs[argsRegs.length-i-1];
-			argsRegs[argsRegs.length-i-1] = tmp;
-		}
-		// the amazing algorithm of Kalev
-		for (int i=0; i < argsRegs.length-1; i++){
-			argsRegs[i+1] = getSettiUlmanVal(argsRegs[i], argsRegs[i+1]);
-			for (int j=i+2; j < argsRegs.length; j++){
-				argsRegs[j] = argsRegs[j] + 1; 
-			}
-		}
-		// now the last element is the result
-		return argsRegs[argsRegs.length-1];
-	}
-
-	@Override
+	
 	/**
 	 * This visitor: always 0
 	 */
@@ -355,7 +319,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * NewClass visitor: always 0
 	 */
@@ -364,7 +328,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * NewArray visitor:
 	 * - get the maximum number of required registers
@@ -376,7 +340,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * Length visitor:
 	 * - get the maximum number of required registers
@@ -388,7 +352,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * MathBinaryOp visitor:
 	 * - get the maximum number of required registers
@@ -401,7 +365,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * LogicalBinaryOp visitor:
 	 * - get the maximum number of required registers
@@ -414,7 +378,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * MathUnaryOp visitor:
 	 * - get the maximum number of required registers
@@ -426,7 +390,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * LogicalUnaryOp visitor:
 	 * - get the maximum number of required registers
@@ -438,7 +402,7 @@ public class RegCounterVisitor implements Visitor {
 		return res;
 	}
 
-	@Override
+	
 	/**
 	 * Literal visitor: always 0
 	 */
@@ -447,7 +411,7 @@ public class RegCounterVisitor implements Visitor {
 		return 0;
 	}
 
-	@Override
+	
 	/**
 	 * ExpressionBlock visitor:
 	 * - get the maximum number of required registers
