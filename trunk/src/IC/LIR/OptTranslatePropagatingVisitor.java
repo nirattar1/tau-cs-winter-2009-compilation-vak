@@ -689,18 +689,19 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		Formal[] formals = new Formal[size];
 		
 		int i = 0;
+		if (call.isExternal()){
+			argsRegs[i] = call.getLocation().getRequiredRegs();
+			args[i] = call.getLocation();
+			formals[i] = null; // location has no corresponding formal.
+			isLoc[i] = true;
+			i++;
+		}
 		for (Expression arg: call.getArguments()){
 			argsRegs[i] = arg.getRequiredRegs();
 			args[i] = arg;
 			formals[i] = thisMethod.getFormals().get(i);
 			isLoc[i] = false;
 			i++;
-		}
-		if (call.isExternal()){
-			argsRegs[i] = call.getLocation().getRequiredRegs();
-			args[i] = call.getLocation();
-			formals[i] = null; // location has no corresponding formal.
-			isLoc[i] = true;
 		}
 				
 		// sort by descending weight
