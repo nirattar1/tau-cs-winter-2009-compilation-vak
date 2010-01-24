@@ -25,7 +25,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		this.global = global;
 	}
 
-	@Override
+	
 	/**
 	 * Program Visitor:
 	 * - recursive calls to all classes
@@ -39,7 +39,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * ICClass Visitor:
 	 * - recursive calls to all methods
@@ -54,7 +54,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Field visitor: never called
 	 */
@@ -75,7 +75,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * VirtualMethod visitor: see methodVisitHelper documentation
 	 */
@@ -83,7 +83,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return methodVisitHelper(method);
 	}
 
-	@Override
+	
 	/**
 	 * StaticMethod visitor: see methodVisitHelper documentation
 	 */
@@ -94,7 +94,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return ret;
 	}
 
-	@Override
+	
 	/**
 	 * LibraryMethod visitor: see methodVisitHelper documentation
 	 */
@@ -102,7 +102,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return methodVisitHelper(method);
 	}
 
-	@Override
+	
 	/**
 	 * Formal visitor: never called
 	 */
@@ -110,7 +110,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * PrimitiveType visitor: never called
 	 */
@@ -118,7 +118,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	 /**
 	  * UserType visitor: never called
 	  */
@@ -126,7 +126,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Assignment visitor:
 	 * - recursive calls to location and assignment
@@ -153,7 +153,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * CallStatement visitor:
 	 * - recursive calls to call
@@ -164,7 +164,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		else return true;
 	}
 
-	@Override
+	
 	/**
 	 * returnStatement visitor:
 	 * - recursive call to call (static or virtual call)
@@ -196,7 +196,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * If visitor:
 	 * - recursive calls condition, operation and elseOperation
@@ -228,7 +228,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * While visitor:
 	 * - recursive calls condition and operation
@@ -262,7 +262,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Break visitor: checks that in while loop
 	 */
@@ -277,7 +277,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Continue visitor: checks that in while loop
 	 */
@@ -292,7 +292,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * StatementsBlock visitor:
 	 * - recursive calls to all statements
@@ -306,7 +306,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * LocalVariable visitor:
 	 * - recursive call to initValue (if exists)
@@ -336,7 +336,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * VariableLocation visitor:
 	 * - recursive call to location (if exists)
@@ -379,7 +379,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		}
 	}
 
-	@Override
+	
 	/**
 	 * ArrayLocation visitor:
 	 * - recursive call to array and index
@@ -407,7 +407,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return arrayType.getElemType();
 	}
 
-	@Override
+	
 	/**
 	 * StaticCall visitor:
 	 * - recursive call to arguments
@@ -470,7 +470,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		}
 	}
 
-	@Override
+	
 	/**
 	 * VirtualCall visitor:
 	 * - recursive call to arguments
@@ -551,7 +551,7 @@ public class DefTypeSemanticChecker implements Visitor {
 	}
 
 	
-	@Override
+	
 	/**
 	 * a Visitor for 'this' expression
 	 * checks that it is not referenced inside a static method.
@@ -566,7 +566,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return ((BlockSymbolTable) thisExpression.getEnclosingScope()).getEnclosingClassSymbolTable().getMySymbol().getType();
 	}
 
-	@Override
+	
 	/**
 	 * a Visitor for the newClass expression
 	 * checks that the class type exists
@@ -584,7 +584,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return ct;
 	}
 
-	@Override
+	
 	/**
 	 * a Visitor for NewArray expression.
 	 * checks that elem type is a legal type.
@@ -621,7 +621,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return null;
 	}
 
-	@Override
+	
 	/**
 	 * a Visitor for the array.length type.
 	 * checks that array is an array.
@@ -646,7 +646,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return null;
 	}
 
-	@Override
+	
 	/**
 	 * a Visitor for MathBinaryOp
 	 * checks that types are legal (int or string for +, int for everything else)
@@ -686,7 +686,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return op1Type;
 	}
 
-	@Override
+	
 	/**
 	 * a Visitor for LogicalBinaryOp
 	 * checks that operands are of the correct type
@@ -748,7 +748,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return ret;
 	}
 
-	@Override
+	
 	/**
 	 * a Visitor for MathUnaryOp - only one math unary operation - unary minus. 
 	 * checks that the operand is of type int.
@@ -769,7 +769,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return opType; // int
 	}
 
-	@Override
+	
 	/**
 	 * a Visitor for LogicalUnaryOp - only one logic unary operation - unary logical negation. 
 	 * checks that the operand is of type boolean.
@@ -790,7 +790,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return opType; // boolean
 	}
 
-	@Override
+	
 	/**
 	 * Literal visitor:
 	 * returns the type of the literal
@@ -810,7 +810,7 @@ public class DefTypeSemanticChecker implements Visitor {
 		return null;
 	}
 
-	@Override
+	
 	/**
 	 * ExpressionBlock visitor:
 	 * - recursive call to expression

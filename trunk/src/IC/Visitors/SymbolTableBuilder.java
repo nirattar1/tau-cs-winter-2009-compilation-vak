@@ -53,7 +53,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 	
-	@Override
+	
 	/**
 	 * Program visitor:
 	 * - creates GlobalSymbolTable
@@ -102,7 +102,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return global;
 	}
 	
-	@Override
+	
 	/**
 	 * Class visitor:
 	 * - creates ClassSymbolTable
@@ -289,7 +289,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return mst;
 	}
 	
-	@Override
+	
 	/**
 	 * StaticMethod visitor: see methodVisit documentation
 	 */
@@ -299,7 +299,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		else return mst;
 	}
 	
-	@Override
+	
 	/**
 	 * VirtualMethod visitor: see methodVisit documentation
 	 */
@@ -309,7 +309,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		else return mst;
 	}
 	
-	@Override
+	
 	/**
 	 * LibraryMethod visitor: see methodVisit documentation
 	 */
@@ -319,7 +319,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		else return mst;
 	}
 	
-	@Override
+	
 	/**
 	 * StatementsBlock visitor:
 	 * - creates BlockSymbolTable
@@ -346,7 +346,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 	}
 	
 
-	@Override
+	
 	/**
 	 * LocalVariable visitor:
 	 * - creates symbol for this local variable and updates its father's symbol table (method / block)
@@ -385,7 +385,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Assignment visitor:
 	 *  - updates enclosing scope for location and value, and calls their visitors recursively
@@ -402,7 +402,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 	
-	@Override
+	
 	/**
 	 * Break visitor: does nothing, returns true
 	 */
@@ -410,7 +410,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * CallStatement visitor:
 	 * - updates enclosing scope for call, and calls its visitor recursively
@@ -423,7 +423,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Continue visitor: does nothing, returns true
 	 */
@@ -431,7 +431,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 	
-	@Override
+	
 	/**
 	 * If visitor:
 	 * - updates enclosing scope for condition, operation and else-operation, and calls their visitors recursively
@@ -465,7 +465,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Return visitor:
 	 * - updates enclosing scope for value, and calls its visitor recursively
@@ -480,7 +480,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * While visitor:
 	 * - updates enclosing scope for condition and operation, and calls their visitors recursively
@@ -503,7 +503,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 	
-	@Override
+	
 	/**
 	 * ArrayLocation visitor:
 	 * - updates enclosing scope for array and index, and calls their visitors recursively
@@ -519,7 +519,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 	
-	@Override
+	
 	/**
 	 * ExpressionBlock visitor:
 	 * - updates enclosing scope for expression, and calls its visitor recursively
@@ -532,7 +532,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Field visitor:
 	 * - updates enclosing scope for type, and calls its visitor recursively
@@ -546,7 +546,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Formal visitor:
 	 * - updates enclosing scope for type, and calls its visitor recursively
@@ -560,7 +560,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Length visitor:
 	 * - updates enclosing scope for array, and calls its visitor recursively
@@ -573,7 +573,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * Literal visitor: does nothing, returns true
 	 */
@@ -597,7 +597,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 	
-	@Override
+	
 	/**
 	 * LogicalBinaryOp visitor: see binaryOpVisit documentation 
 	 */
@@ -605,7 +605,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return binaryOpVisit(binaryOp);
 	}
 	
-	@Override
+	
 	/**
 	 * MathBinaryOp visitor: see binaryOpVisit documentation
 	 */
@@ -626,7 +626,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * LogicalUnaryOp visitor: see unaryOpVisit documentation
 	 */
@@ -634,7 +634,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return unaryOpVisit(unaryOp);
 	}
 
-	@Override
+	
 	/**
 	 * MathUnaryOp visitor: see unaryOpVisit documentation
 	 */
@@ -642,7 +642,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return unaryOpVisit(unaryOp);
 	}
 
-	@Override
+	
 	/**
 	 * NewArray visitor:
 	 * - updates enclosing scope for type and size, and calls their visitors recursively
@@ -658,7 +658,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * NewClass visitor: does nothing, returns true
 	 */
@@ -666,7 +666,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * PrimitiveType visitor: does nothing, returns true
 	 */
@@ -674,7 +674,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * This visitor: does nothing, returns true
 	 */
@@ -682,7 +682,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * UserType visitor: does nothing, returns true
 	 */
@@ -690,7 +690,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * VariableLocation visitor:
 	 * - updates enclosing scope for location, and calls its visitor recursively
@@ -712,7 +712,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 
-	@Override
+	
 	/**
 	 * StaticCall visitor:
 	 * - updates enclosing scope for arguments, and calls their visitors recursively
@@ -727,7 +727,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		return true;
 	}
 	
-	@Override
+	
 	/**
 	 * VirtualCall visitor:
 	 * - updates enclosing scope for location and arguments, and calls their visitors recursively
