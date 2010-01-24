@@ -752,29 +752,51 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		String tr = "";
 		// decide which block will be first by the Setti-Ullman algorithm
 		boolean suBool = binaryOp.getFirstOperand().getRequiredRegs() >= binaryOp.getSecondOperand().getRequiredRegs(); 
+		LIRUpType operand1 = null;
+		LIRUpType operand2 = null;
 		
 		if (suBool){
 			// recursive call to operands
-			LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d);
+			operand1 = binaryOp.getFirstOperand().accept(this, d);
 			tr += operand1.getLIRCode();
-			tr += getMoveCommand(operand1.getLIRInstType());
-			tr += operand1.getTargetRegister()+",R"+d+"\n";
+			if (operand1.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(operand1.getLIRInstType());
+				tr += operand1.getTargetRegister()+",R"+d+"\n";
+				// update the operand register
+				operand1.setTargetRegister("R"+d);
+				operand1.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 			
-			LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d+1);
+			operand2 = binaryOp.getSecondOperand().accept(this, d+1);
 			tr += operand2.getLIRCode();
-			tr += getMoveCommand(operand2.getLIRInstType());
-			tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
+			if (operand2.getLIRInstType() == LIRFlagEnum.ARR_LOCATION ||
+					operand2.getLIRInstType() == LIRFlagEnum.EXT_VAR_LOCATION){
+				tr += getMoveCommand(operand2.getLIRInstType());
+				tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
+				// update the operand register
+				operand2.setTargetRegister("R"+(d+1));
+				operand2.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 		} else {
 			// recursive call to operands
-			LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d);
+			operand2 = binaryOp.getSecondOperand().accept(this, d);
 			tr += operand2.getLIRCode();
-			tr += getMoveCommand(operand2.getLIRInstType());
-			tr += operand2.getTargetRegister()+",R"+d+"\n";
+			if (operand2.getLIRInstType() == LIRFlagEnum.ARR_LOCATION ||
+					operand2.getLIRInstType() == LIRFlagEnum.EXT_VAR_LOCATION){
+				tr += getMoveCommand(operand2.getLIRInstType());
+				tr += operand2.getTargetRegister()+",R"+d+"\n";
+				operand2.setTargetRegister("R"+d);
+				operand2.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 			
-			LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d+1);
+			operand1 = binaryOp.getFirstOperand().accept(this, d+1);
 			tr += operand1.getLIRCode();
-			tr += getMoveCommand(operand1.getLIRInstType());
-			tr += operand1.getTargetRegister()+",R"+(d+1)+"\n";
+			if (operand1.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(operand1.getLIRInstType());
+				tr += operand1.getTargetRegister()+",R"+(d+1)+"\n";
+				operand1.setTargetRegister("R"+(d+1));
+				operand1.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 		}
 		
 		// operation
@@ -783,7 +805,11 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			// check if operation is on strings or on integers
 			IC.TypeTable.Type operandsType = (IC.TypeTable.Type) binaryOp.getFirstOperand().accept(new DefTypeSemanticChecker(global));
 			if (operandsType.subtypeOf(IC.TypeTable.TypeTable.getUniquePrimitiveTypes().get("int"))){
-				tr += "Add R"+(d+1)+",R"+d+"\n";
+				tr += "Add "+operand2.getTargetRegister()+","+operand1.getTargetRegister()+"\n";
+				if (!operand1.getTargetRegister().equals("R"+d)){
+					// put result in Rd anyway
+					tr += "Move "+operand1.getTargetRegister()+",R"+d+"\n"; 
+				}
 			} else { // strings
 				tr += suBool ? 
 						"Library __stringCat(R"+d+",R"+(d+1)+"),R"+d+"\n":
@@ -832,37 +858,63 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		String tr = "";
 		// decide which block will be first by the Setti-Ullman algorithm
 		boolean suBool = binaryOp.getFirstOperand().getRequiredRegs() >= binaryOp.getSecondOperand().getRequiredRegs(); 
+		LIRUpType operand1 = null;
+		LIRUpType operand2 = null;
 		
 		if (suBool){
 			// recursive call to operands
-			LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d);
+			operand1 = binaryOp.getFirstOperand().accept(this, d);
 			tr += operand1.getLIRCode();
-			tr += getMoveCommand(operand1.getLIRInstType());
-			tr += operand1.getTargetRegister()+",R"+d+"\n";
+			// if the received value is not already a register, place it into one
+			if (operand1.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(operand1.getLIRInstType());
+				tr += operand1.getTargetRegister()+",R"+d+"\n";
+				// update target register
+				operand1.setTargetRegister("R"+d);
+				operand1.setLIRInstType(LIRFlagEnum.REGISTER);
+			};
 			
-			LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d+1);
+			operand2 = binaryOp.getSecondOperand().accept(this, d+1);
 			tr += operand2.getLIRCode();
-			tr += getMoveCommand(operand2.getLIRInstType());
-			tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
+			if (operand2.getLIRInstType() == LIRFlagEnum.ARR_LOCATION ||
+					operand2.getLIRInstType() == LIRFlagEnum.EXT_VAR_LOCATION){			
+				tr += getMoveCommand(operand2.getLIRInstType());
+				tr += operand2.getTargetRegister()+",R"+(d+1)+"\n";
+				// update target register
+				operand2.setTargetRegister("R"+(d+1));
+				operand2.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 		} else {
 			// recursive call to operands
-			LIRUpType operand2 = binaryOp.getSecondOperand().accept(this, d);
+			operand2 = binaryOp.getSecondOperand().accept(this, d);
 			tr += operand2.getLIRCode();
-			tr += getMoveCommand(operand2.getLIRInstType());
-			tr += operand2.getTargetRegister()+",R"+d+"\n";
+			if (operand2.getLIRInstType() == LIRFlagEnum.ARR_LOCATION ||
+					operand2.getLIRInstType() == LIRFlagEnum.EXT_VAR_LOCATION){
+				tr += getMoveCommand(operand2.getLIRInstType());
+				tr += operand2.getTargetRegister()+",R"+d+"\n";
+				// update target register
+				operand2.setTargetRegister("R"+d);
+				operand2.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 			
-			LIRUpType operand1 = binaryOp.getFirstOperand().accept(this, d+1);
+			operand1 = binaryOp.getFirstOperand().accept(this, d+1);
 			tr += operand1.getLIRCode();
-			tr += getMoveCommand(operand1.getLIRInstType());
-			tr += operand1.getTargetRegister()+",R"+(d+1)+"\n";
+			// if the received value is not already a register, place it into one
+			if (operand1.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(operand1.getLIRInstType());
+				tr += operand1.getTargetRegister()+",R"+(d+1)+"\n";
+				// update target register
+				operand1.setTargetRegister("R"+(d+1));
+				operand1.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 		}
 		
 		
 		// operation
 		if (binaryOp.getOperator() != BinaryOps.LAND && binaryOp.getOperator() != BinaryOps.LOR){
 			tr += suBool ?
-					"Compare R"+(d+1)+",R"+d+"\n":
-					"Compare R"+d+",R"+(d+1)+"\n";
+					"Compare "+operand2.getTargetRegister()+","+operand1.getTargetRegister()+"\n":
+					"Compare "+operand2.getTargetRegister()+","+operand1.getTargetRegister()+"\n";
 		}
 		switch (binaryOp.getOperator()){
 		case EQUAL:
@@ -884,17 +936,37 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			tr += "JumpLE "+trueLabel+"\n";
 			break;
 		case LAND:
-			tr += "Compare 0,R"+d+"\n";
+			tr += "Compare 0,"+operand1.getTargetRegister()+"\n";
 			tr += "JumpTrue "+falseLabel+"\n";
-			tr += "Compare 0,R"+(d+1)+"\n";
+			// if operand2 not in register, put it in the free one
+			if (operand2.getLIRInstType() != LIRFlagEnum.REGISTER){
+				String targetReg = operand1.getTargetRegister().equals("R"+d) ?	"R"+(d+1) : "R"+d;
+				// move it into the register
+				tr += getMoveCommand(operand2.getLIRInstType());
+				tr += operand2.getTargetRegister()+","+targetReg+"\n";
+				// update target register
+				operand2.setTargetRegister(targetReg);
+				operand2.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
+			tr += "Compare 0,"+operand2.getTargetRegister()+"\n";
 			tr += "JumpTrue "+falseLabel+"\n";
 			tr += "Jump "+trueLabel+"\n";
 			tr += falseLabel+":\n"; 
 			break;
 		case LOR:
-			tr += "Compare 0,R"+d+"\n";
+			tr += "Compare 0,"+operand1.getTargetRegister()+"\n";
 			tr += "JumpFalse "+trueLabel+"\n";
-			tr += "Compare 0,R"+(d+1)+"\n";
+			// if operand2 not in register, put it in the free one
+			if (operand2.getLIRInstType() != LIRFlagEnum.REGISTER){
+				String targetReg = operand1.getTargetRegister().equals("R"+d) ?	"R"+(d+1) : "R"+d;
+				// move it into the register
+				tr += getMoveCommand(operand2.getLIRInstType());
+				tr += operand2.getTargetRegister()+","+targetReg+"\n";
+				// update target register
+				operand2.setTargetRegister(targetReg);
+				operand2.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
+			tr += "Compare 0,"+operand2.getTargetRegister()+"\n";
 			tr += "JumpFalse "+trueLabel+"\n"; 
 			break;
 		default:
@@ -920,8 +992,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		// recursive call to operand
 		LIRUpType operand = unaryOp.getOperand().accept(this, d);
 		tr += operand.getLIRCode();
-		tr += getMoveCommand(operand.getLIRInstType());
-		tr += operand.getTargetRegister()+",R"+d+"\n";
+		
+		// if the received value is not already a register, place it into one
+		if (operand.getLIRInstType() != LIRFlagEnum.REGISTER){
+			tr += getMoveCommand(operand.getLIRInstType());
+			tr += operand.getTargetRegister()+",R"+d+"\n";
+		} // else it is already in register Rd
 		
 		tr += "Neg R"+d+"\n";
 		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
@@ -940,8 +1016,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		// recursive call to operand
 		LIRUpType operand = unaryOp.getOperand().accept(this, d);
 		tr += operand.getLIRCode();
-		tr += getMoveCommand(operand.getLIRInstType());
-		tr += operand.getTargetRegister()+",R"+d+"\n";
+		
+		// if the received value is not already a register, place it into one
+		if (operand.getLIRInstType() != LIRFlagEnum.REGISTER){
+			tr += getMoveCommand(operand.getLIRInstType());
+			tr += operand.getTargetRegister()+",R"+d+"\n";
+		} // else it is already in register Rd
 		
 		tr += "Compare 0,R"+d+"\n";
 		tr += "JumpTrue "+trueLabel+"\n";
