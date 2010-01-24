@@ -1,5 +1,0 @@
-Optimizations TODO:
-===================
-- remove trivial moves ("Move R1,R1")
-- replace transitions "Move x,Ri  Move Ri,y" to "Move x,y"
-- fix translation for fields (try quicksort again - a cannot be resolved)
