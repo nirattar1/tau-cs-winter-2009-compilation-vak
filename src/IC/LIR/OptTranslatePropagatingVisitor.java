@@ -810,34 +810,58 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 					// put result in Rd anyway
 					tr += "Move "+operand1.getTargetRegister()+",R"+d+"\n"; 
 				}
-			} else { // strings
-				tr += suBool ? 
-						"Library __stringCat(R"+d+",R"+(d+1)+"),R"+d+"\n":
-						"Library __stringCat(R"+(d+1)+",R"+d+"),R"+d+"\n";
+			} else { // strings - always at this order
+				tr += "Library __stringCat("+operand1.getTargetRegister()+","+operand2.getTargetRegister()+"),R"+d+"\n";
 			}
 			break;
 		case MINUS:
-			tr += suBool?
-					"Sub R"+(d+1)+",R"+d+"\n":
-					"Sub R"+d+",R"+(d+1)+"\n" +	"Move R"+(d+1)+",R"+d+"\n";
+			tr += "Sub "+operand2.getTargetRegister()+","+operand1.getTargetRegister()+"\n";
+			if (!suBool) tr += "Move R"+(d+1)+",R"+d+"\n";
 			break;
 		case MULTIPLY:
-			tr += "Mul R"+(d+1)+",R"+d+"\n";
+			tr += "Mul "+operand2.getTargetRegister()+","+operand1.getTargetRegister()+"\n";
+			if (!operand1.getTargetRegister().equals("R"+d)){
+				// put result in Rd anyway
+				tr += "Move "+operand1.getTargetRegister()+",R"+d+"\n"; 
+			}
 			break;
 		case DIVIDE:
 			// check division by zero
-			tr += suBool ?
-					"StaticCall __checkZero(b=R"+(d+1)+"),Rdummy\n":
-					"StaticCall __checkZero(b=R"+d+"),Rdummy\n";
+			if (operand2.getLIRInstType() != LIRFlagEnum.REGISTER){ // operand2 must be in a register
+				String targetReg = operand1.getTargetRegister().equals("R"+d) ?	"R"+(d+1) : "R"+d;
+				// move it into the register
+				tr += getMoveCommand(operand2.getLIRInstType());
+				tr += operand2.getTargetRegister()+","+targetReg+"\n";
+				// update target register
+				operand2.setTargetRegister(targetReg);
+				operand2.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
+			tr += "StaticCall __checkZero(b="+operand2.getTargetRegister()+"),Rdummy\n";
 			
-			tr += suBool ?
-					"Div R"+(d+1)+",R"+d+"\n":
-					"Div R"+d+",R"+(d+1)+"\n" + "Move R"+(d+1)+",R"+d+"\n";
+			tr += "Div "+operand2.getTargetRegister()+","+operand1.getTargetRegister()+"\n";
+			if (!operand1.getTargetRegister().equals("R"+d)){
+				// put result in Rd anyway
+				tr += "Move "+operand1.getTargetRegister()+",R"+d+"\n"; 
+			}
 			break;
 		case MOD:
-			tr += suBool ?
-					"Mod R"+(d+1)+",R"+d+"\n":
-					"Mod R"+d+",R"+(d+1)+"\n" + "Move R"+(d+1)+",R"+d+"\n";
+			// check division by zero
+			if (operand2.getLIRInstType() != LIRFlagEnum.REGISTER){ // operand2 must be in a register
+				String targetReg = operand1.getTargetRegister().equals("R"+d) ?	"R"+(d+1) : "R"+d;
+				// move it into the register
+				tr += getMoveCommand(operand2.getLIRInstType());
+				tr += operand2.getTargetRegister()+","+targetReg+"\n";
+				// update target register
+				operand2.setTargetRegister(targetReg);
+				operand2.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
+			tr += "StaticCall __checkZero(b="+operand2.getTargetRegister()+"),Rdummy\n";
+			
+			tr += "Mod "+operand2.getTargetRegister()+","+operand1.getTargetRegister()+"\n";
+			if (!operand1.getTargetRegister().equals("R"+d)){
+				// put result in Rd anyway
+				tr += "Move "+operand1.getTargetRegister()+",R"+d+"\n"; 
+			}
 			break;
 		default:
 			System.err.println("*** YOUR PARSER SUCKS ***");
