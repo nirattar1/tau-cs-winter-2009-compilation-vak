@@ -261,14 +261,22 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	public LIRUpType visit(Assignment assignment, Integer d){
 		String tr = "";
 		
-		// translate assignment
 		LIRUpType assign = assignment.getAssignment().accept(this, d);
+		LIRUpType var = assignment.getVariable().accept(this, d+1);
+		
+		// translate assignment
 		tr += assign.getLIRCode();
-		tr += getMoveCommand(assign.getLIRInstType());
-		tr += assign.getTargetRegister()+",R"+d+"\n";
+		if (assign.getLIRInstType() != LIRFlagEnum.REGISTER ||
+				assign.getLIRInstType() != LIRFlagEnum.LITERAL){
+			if (!(assign.getLIRInstType() == LIRFlagEnum.LOC_VAR_LOCATION && var.getLIRInstType() == LIRFlagEnum.REGISTER)){
+				tr += getMoveCommand(assign.getLIRInstType());
+				tr += assign.getTargetRegister()+",R"+d+"\n";
+				assign.setTargetRegister("R"+d);
+				assign.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
+		}
 		
 		// translate variable
-		LIRUpType var = assignment.getVariable().accept(this, d+1);
 		tr += var.getLIRCode();
 				
 		// handle all variable cases
@@ -324,9 +332,13 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			int fieldOffset = locationClassLayout.getFieldOffset(f);
 			
 			// translate this step
-			tr += getMoveCommand(loc.getLIRInstType());
 			String locReg = "R"+d;
-			tr += loc.getTargetRegister()+","+locReg+"\n";
+			if (loc.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(loc.getLIRInstType());
+				tr += loc.getTargetRegister()+","+locReg+"\n";
+				loc.setTargetRegister(locReg);
+				loc.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 			
 			// check external location null reference
 			tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
@@ -355,8 +367,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			tr += array.getLIRCode();
 
 			// move result to a single register
-			tr += getMoveCommand(array.getLIRInstType());
-			tr += array.getTargetRegister()+",R"+d+"\n";
+			if (array.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(array.getLIRInstType());
+				tr += array.getTargetRegister()+",R"+d+"\n";
+				array.setTargetRegister("R"+d);
+				array.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 
 			// check array null reference
 			tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
@@ -366,8 +382,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			tr += index.getLIRCode();
 
 			// move result to a single register
-			tr += getMoveCommand(index.getLIRInstType());
-			tr += index.getTargetRegister()+",R"+(d+1)+"\n";
+			if (index.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(index.getLIRInstType());
+				tr += index.getTargetRegister()+",R"+(d+1)+"\n";
+				index.setTargetRegister("R"+(d+1));
+				index.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 
 			// check array access
 			tr += "StaticCall __checkArrayAccess(a=R"+d+",i=R"+(d+1)+"),Rdummy\n";
@@ -377,8 +397,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			tr += index.getLIRCode();
 
 			// move result to a single register
-			tr += getMoveCommand(index.getLIRInstType());
-			tr += index.getTargetRegister()+",R"+d+"\n";
+			if (index.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(index.getLIRInstType());
+				tr += index.getTargetRegister()+",R"+d+"\n";
+				index.setTargetRegister("R"+d);
+				index.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 
 			// check array access
 			tr += "StaticCall __checkArrayAccess(a=R"+d+",i=R"+d+"),Rdummy\n";
@@ -388,8 +412,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			tr += array.getLIRCode();
 
 			// move result to a single register
-			tr += getMoveCommand(array.getLIRInstType());
-			tr += array.getTargetRegister()+",R"+(d+1)+"\n";
+			if (array.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(array.getLIRInstType());
+				tr += array.getTargetRegister()+",R"+(d+1)+"\n";
+				array.setTargetRegister("R"+(d+1));
+				array.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 
 			// check array null reference
 			tr += "StaticCall __checkNullRef(a=R"+(d+1)+"),Rdummy\n";
@@ -438,8 +466,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		// recursive call the condition expression
 		LIRUpType condExp = ifStatement.getCondition().accept(this, d);
 		tr += condExp.getLIRCode();
-		tr += getMoveCommand(condExp.getLIRInstType());
-		tr += condExp.getTargetRegister()+",R"+d+"\n";
+		if (condExp.getLIRInstType() != LIRFlagEnum.REGISTER){
+			tr += getMoveCommand(condExp.getLIRInstType());
+			tr += condExp.getTargetRegister()+",R"+d+"\n";
+			condExp.setTargetRegister("R"+d);
+			condExp.setLIRInstType(LIRFlagEnum.REGISTER);
+		}
 		
 		// check condition
 		tr += "Compare 0,R"+d+"\n";
@@ -482,8 +514,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		// recursive call to condition
 		LIRUpType condExp = whileStatement.getCondition().accept(this, d);
 		tr += condExp.getLIRCode();
-		tr += getMoveCommand(condExp.getLIRInstType());
-		tr += condExp.getTargetRegister()+",R"+d+"\n";
+		if (condExp.getLIRInstType() != LIRFlagEnum.REGISTER){
+			tr += getMoveCommand(condExp.getLIRInstType());
+			tr += condExp.getTargetRegister()+",R"+d+"\n";
+			condExp.setTargetRegister("R"+d);
+			condExp.setLIRInstType(LIRFlagEnum.REGISTER);
+		}
 		
 		// check condition
 		tr += "Compare 0,R"+d+"\n";
@@ -544,10 +580,14 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		if (localVariable.hasInitValue()){
 			LIRUpType initVal = localVariable.getInitValue().accept(this, d);
 			tr += initVal.getLIRCode();
-			tr += getMoveCommand(initVal.getLIRInstType());
-			tr += initVal.getTargetRegister()+",R"+d+"\n";
+			if (initVal.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(initVal.getLIRInstType());
+				tr += initVal.getTargetRegister()+",R"+d+"\n";
+				initVal.setTargetRegister("R"+d);
+				initVal.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 			// move register into the local var name
-			tr += "Move R"+d+","+localVariable.getNameDepth()+"\n";
+			tr += "Move "+initVal.getTargetRegister()+","+localVariable.getNameDepth()+"\n";
 		}
 		
 		return new LIRUpType(tr, LIRFlagEnum.STATEMENT,"");
@@ -567,8 +607,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			LIRUpType argExp = arg.accept(this, i);
 			tr += "# argument #"+(i-d)+":\n";
 			tr += argExp.getLIRCode();
-			tr += getMoveCommand(argExp.getLIRInstType());
-			tr += argExp.getTargetRegister()+",R"+i+"\n";
+			if (argExp.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(argExp.getLIRInstType());
+				tr += argExp.getTargetRegister()+",R"+i+"\n";
+				argExp.setTargetRegister("R"+i);
+				argExp.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 			// increment registers count
 			i++;
 		}
@@ -630,8 +674,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		if (call.isExternal()){
 			LIRUpType location = call.getLocation().accept(this, d);
 			tr += location.getLIRCode();
-			tr += getMoveCommand(location.getLIRInstType());
-			tr += location.getTargetRegister()+",R"+d+"\n";
+			if (location.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(location.getLIRInstType());
+				tr += location.getTargetRegister()+",R"+d+"\n";
+				location.setTargetRegister("R"+d);
+				location.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 			
 			// check location null reference
 			tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
@@ -645,8 +693,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 			LIRUpType argExp = arg.accept(this, i);
 			tr += "# argument #"+(i-d-1)+":\n";
 			tr += argExp.getLIRCode();
-			tr += getMoveCommand(argExp.getLIRInstType());
-			tr += argExp.getTargetRegister()+",R"+i+"\n";
+			if (argExp.getLIRInstType() != LIRFlagEnum.REGISTER){
+				tr += getMoveCommand(argExp.getLIRInstType());
+				tr += argExp.getTargetRegister()+",R"+i+"\n";
+				argExp.setTargetRegister("R"+i);
+				argExp.setLIRInstType(LIRFlagEnum.REGISTER);
+			}
 			// increment registers count
 			i++;
 		}
@@ -676,7 +728,7 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 	 * - translate this reference: get dispatch vector
 	 * - return translation
 	 */
-	public LIRUpType visit(This thisExpression, Integer d){
+	public LIRUpType visit(This thisExpression, Integer d){//TODO
 		String tr = "Move this,R"+d+"\n";
 		return new LIRUpType(tr, LIRFlagEnum.REGISTER,"R"+d);
 	}
@@ -706,8 +758,13 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		// recursive call to size
 		LIRUpType size = newArray.getSize().accept(this, d);
 		tr += size.getLIRCode();
-		tr += getMoveCommand(size.getLIRInstType());
-		tr += size.getTargetRegister()+",R"+d+"\n";
+		if (size.getLIRInstType() != LIRFlagEnum.REGISTER){
+			tr += getMoveCommand(size.getLIRInstType());
+			tr += size.getTargetRegister()+",R"+d+"\n";
+			size.setTargetRegister("R"+d);
+			size.setLIRInstType(LIRFlagEnum.REGISTER);
+		}
+		
 		// multiply by 4
 		tr += "Mul 4,R"+d+"\n";
 		
@@ -731,8 +788,12 @@ public class OptTranslatePropagatingVisitor extends TranslatePropagatingVisitor{
 		// recursive call to array expression
 		LIRUpType array = length.getArray().accept(this, d);
 		tr += array.getLIRCode();
-		tr += getMoveCommand(array.getLIRInstType());
-		tr += array.getTargetRegister()+",R"+d+"\n";
+		if (array.getLIRInstType() != LIRFlagEnum.REGISTER){
+			tr += getMoveCommand(array.getLIRInstType());
+			tr += array.getTargetRegister()+",R"+d+"\n";
+			array.setTargetRegister("R"+d);
+			array.setLIRInstType(LIRFlagEnum.REGISTER);
+		}
 		
 		// check array null reference
 		tr += "StaticCall __checkNullRef(a=R"+d+"),Rdummy\n";
