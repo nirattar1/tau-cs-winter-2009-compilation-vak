@@ -66,7 +66,7 @@ public class RegCounterVisitor implements Visitor {
 
 	@Override
 	/**
-	 * VirtualMethod visitor:
+	 * StaticMethod visitor:
 	 * - get the maximum number of required registers
 	 * - return the result
 	 */
@@ -128,7 +128,7 @@ public class RegCounterVisitor implements Visitor {
 
 	@Override
 	/**
-	 * VirtualMethod visitor:
+	 * Assignment visitor:
 	 * - get the maximum number of required registers
 	 * - return the result
 	 */
@@ -304,10 +304,13 @@ public class RegCounterVisitor implements Visitor {
 			argsRegs[i] = (Integer)call.getArguments().get(i).accept(this);
 		}
 		if (call.isExternal()) argsRegs[argsRegs.length-1] = (Integer)call.getLocation().accept(this);
-		int res = MethodCallHelper(argsRegs);
+		//int res = MethodCallHelper(argsRegs);
 		
-		call.setRequiredRegs(res);
-		return res;
+		// set the value in the VirtualCall ASTNode as MAX_INT, for keeping the original
+		// order of virtual calls
+		// call.setRequiredRegs(res);
+		call.setRequiredRegs(Integer.MAX_VALUE);
+		return Integer.MAX_VALUE;
 	}
 	
 	/**
@@ -319,6 +322,11 @@ public class RegCounterVisitor implements Visitor {
 	 */
 	public int MethodCallHelper(int[] argsRegs){
 		// calculate the maximum numbers of required registers
+		// if one of the args is MAX_VALUE (i.e. virtual call), return MAX_VALUE
+		for (int arg : argsRegs) {
+			if (arg == Integer.MAX_VALUE) return Integer.MAX_VALUE;
+		}
+		
 		// first sort the array
 		Arrays.sort(argsRegs);
 		// reverse array
@@ -462,7 +470,7 @@ public class RegCounterVisitor implements Visitor {
 	public static int getSettiUlmanVal(Object node1, Object node2){
 		int n1 = (Integer) node1;
 		int n2 = (Integer) node2;
-		if (n1 == n2) return n1 + 1;
+		if (n1 == n2) return (n1 == Integer.MAX_VALUE) ? Integer.MAX_VALUE : n1 + 1;
 		else return Math.max(n1, n2);
 	}
 	
