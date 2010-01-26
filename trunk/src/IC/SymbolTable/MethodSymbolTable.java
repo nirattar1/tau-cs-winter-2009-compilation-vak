@@ -94,6 +94,20 @@ public class MethodSymbolTable extends BlockSymbolTable {
 	}
 	
 	/**
+	 * Returns true if and only if the first encounter with name in the Symbol table hierarchy
+	 * is in an enclosing class.
+	 * This method will only be called in the translation to LIR. Consequently, The variable name exists (passed checks),
+	 * and so, if it wasn't in any of the blocks, and is not in the method, it has to be a field in the class.
+	 * @param name - name of the variable
+	 * @return true iff name is a name of a field
+	 */
+	public boolean isVarField (String name){
+		if (varEntries.containsKey(name)) return false;
+		else return true;
+	}
+
+	
+	/**
 	 * get the depth of the symbol table
 	 * @param name
 	 * @return
