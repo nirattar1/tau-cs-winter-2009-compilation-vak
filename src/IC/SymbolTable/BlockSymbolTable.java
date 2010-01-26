@@ -41,6 +41,17 @@ public class BlockSymbolTable extends SymbolTable {
 	}
 	
 	/**
+	 * Returns true if and only if the first encounter with name in the Symbol table hierarchy
+	 * is in an enclosing class.
+	 * @param name - name of the variable
+	 * @return true iff name is a name of a field
+	 */
+	public boolean isVarField (String name){
+		if (varEntries.containsKey(name)) return false;
+		else return ((BlockSymbolTable)parent).isVarField(name);
+	}
+	
+	/**
 	 * get the depth of the symbol table
 	 * @param name
 	 * @return

@@ -388,8 +388,28 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 			
 			return new LIRUpType(tr, LIRFlagEnum.EXT_VAR_LOCATION, locReg+"."+fieldOffset);
 		}else{
-			// translate only the variable name
-			return new LIRUpType("",LIRFlagEnum.LOC_VAR_LOCATION,location.getNameDepth());
+			// check if the variable is a field
+			if (((BlockSymbolTable)location.getEnclosingScope()).isVarField(location.getName())){
+				String thisClassName = ((BlockSymbolTable)location.getEnclosingScope()).getEnclosingClassSymbolTable().getMySymbol().getName();
+				
+				ClassLayout locationClassLayout = classLayouts.get(thisClassName);
+				
+				// get the field offset for the variable
+				Field f = getFieldASTNodeRec(locationClassLayout.getICClass(), location.getName());
+				
+				// get the field offset
+				int fieldOffset = locationClassLayout.getFieldOffset(f);
+				
+				tr += "Move this,R"+d;
+				String tgtLoc = "R"+d+"."+fieldOffset;
+				
+				// translate only the variable name
+				return new LIRUpType(tr,LIRFlagEnum.EXT_VAR_LOCATION,tgtLoc);
+
+			} else {
+				// translate only the variable name
+				return new LIRUpType("",LIRFlagEnum.LOC_VAR_LOCATION,location.getNameDepth());
+			}
 		}
 	}
 
