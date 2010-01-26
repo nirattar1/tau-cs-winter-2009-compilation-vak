@@ -168,7 +168,7 @@ Move 1,R0
 Move R0,val1
 _while_cond_label2:
 Move i1,R0
-Compare 400,R0
+Compare 40,R0
 JumpL _true_label3
 Move 0,R0
 Jump _end_label3
