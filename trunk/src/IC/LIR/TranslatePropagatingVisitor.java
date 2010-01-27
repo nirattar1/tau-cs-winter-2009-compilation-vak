@@ -400,7 +400,7 @@ public class TranslatePropagatingVisitor implements PropagatingVisitor<Integer, 
 				// get the field offset
 				int fieldOffset = locationClassLayout.getFieldOffset(f);
 				
-				tr += "Move this,R"+d;
+				tr += "Move this,R"+d+"\n";
 				String tgtLoc = "R"+d+"."+fieldOffset;
 				
 				// translate only the variable name
