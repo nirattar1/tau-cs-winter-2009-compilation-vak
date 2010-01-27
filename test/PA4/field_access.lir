@@ -65,24 +65,14 @@ Jump _error_exit
 
 # methods
 _B_init:
-# get instance's fields
-Move this,R0
-MoveField R0.1,R1
-Move R1,x0
-Move 1,R0
 Move this,R1
-MoveField R0,R1.1
+MoveField 1,R1.1
 Return 9999
 
 _B_plus:
-# get instance's fields
-Move this,R0
-MoveField R0.1,R1
-Move R1,x0
 Move this,R0
 MoveField R0.1,R0
 Add 1,R0
-Move R0,R0
 Move this,R1
 MoveField R0,R1.1
 Move this,R0
@@ -91,14 +81,9 @@ Move R0,j2
 Return j2
 
 _B_minus:
-# get instance's fields
-Move this,R0
-MoveField R0.1,R1
-Move R1,x0
 Move this,R0
 MoveField R0.1,R0
 Sub 1,R0
-Move R0,R0
 Move this,R1
 MoveField R0,R1.1
 Move this,R0
