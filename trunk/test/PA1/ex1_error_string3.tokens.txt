@@ -1,0 +1,14 @@
+1: QUOTE("We will quote shakespeare")
+3: QUOTE("Marcellus: ")
+3: CLASS_ID(Something)
+3: ID(is)
+3: ID(rotten)
+3: ID(in)
+3: ID(the)
+3: ID(state)
+3: ID(of)
+3: CLASS_ID(Denmark)
+3: DOT
+3: QUOTE("")
+5: QUOTE("Alas it has split in two, when all we really would have wanted was for it to be one")
+5: EOF
