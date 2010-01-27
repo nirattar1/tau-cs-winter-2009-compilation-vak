@@ -87,7 +87,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 			if (cst == null) return null; // If anywhere in the recursion an error has been encountered, the run will terminate.
 			else {
 				if(c.hasSuperClass()){
-					global.getClassSymbolTable(c.getSuperClassName()).addClassSymbolTable(cst);
+					global.getClassSymbolTableRec(c.getSuperClassName()).addClassSymbolTable(cst);
 				} else {
 					global.addClassSymbolTable(cst);
 				}
@@ -118,7 +118,7 @@ public class SymbolTableBuilder implements IC.AST.Visitor{
 		// create suitable class symbol table
 		if (icClass.hasSuperClass()) {
 			cst = new ClassSymbolTable(icClass.getName(),
-					global.getClassSymbolTable(icClass.getSuperClassName()),
+					global.getClassSymbolTableRec(icClass.getSuperClassName()),
 					global);
 		} else { // no superclass
 			cst = new ClassSymbolTable(icClass.getName(),global);

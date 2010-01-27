@@ -174,7 +174,7 @@ public class RegCounterVisitor implements Visitor {
 		int res = Math.max((Integer)ifStatement.getCondition().accept(this),
 							(Integer)ifStatement.getOperation().accept(this));
 		if (ifStatement.hasElse()){
-			int elseRes = (Integer)ifStatement.accept(this);
+			int elseRes = (Integer)ifStatement.getElseOperation().accept(this);
 			res = Math.max(res, elseRes);
 		}
 		
