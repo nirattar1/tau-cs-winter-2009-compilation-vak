@@ -1,0 +1,2 @@
+3: CLASS_ID(C)
+3: Lexical error: illegal character '@'

@@ -1,0 +1,4 @@
+1: MINUS
+1: INTEGER(2147483647)
+2: INTEGER(2147483647)
+3: Lexical error: integer out of bound '2147483648'

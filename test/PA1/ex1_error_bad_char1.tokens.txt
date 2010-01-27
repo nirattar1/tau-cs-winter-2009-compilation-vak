@@ -1,0 +1,2 @@
+3: ID(iSpyWithMyLittleI)
+7: Lexical error: illegal character '$'

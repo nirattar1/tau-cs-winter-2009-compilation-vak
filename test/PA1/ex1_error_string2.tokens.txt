@@ -1,0 +1,2 @@
+1: QUOTE("this string is english only")
+3: Lexical error: illegal character '"'

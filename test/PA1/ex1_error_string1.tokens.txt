@@ -1,0 +1,2 @@
+1: QUOTE("This is a good string")
+2: Lexical error: illegal character '"'

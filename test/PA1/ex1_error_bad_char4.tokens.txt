@@ -1,0 +1,5 @@
+1: QUOTE("I guess not")
+3: ID(but)
+3: ID(whats)
+3: ID(the)
+3: Lexical error: illegal character '&'
